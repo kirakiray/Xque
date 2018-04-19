@@ -1,0 +1,10 @@
+{
+    "name": "xque.js",
+    "version": "1.0.0",
+    "description": "Zepto replacer",
+    "scripts": {
+        "build": "node scripts/build.js"
+    },
+    "author": "YAO",
+    "license": "MIT"
+}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>smartJQ test</title>
+    <link rel="stylesheet" href="qunit-1.15.0.css" />
+    <style>
+        .test_group {
+            margin-top: 50px;
+        }
+    </style>
+    <script src="qunit-1.15.0.js"></script>
+    <script src="../dist/xque.js"></script>
+    <!-- <script src="jquery-3.3.1.js"></script> -->
+</head>
+
+<body>
+    <h1 id="qunit-header">smartJQ test</h1>
+    <h2 id="qunit-banner"></h2>
+    <ol id="qunit-tests"></ol>
+
+    <div class="test_group">
+        <div id="tar0">
+            <div class="tar0_ele"></div>
+            <div class="tar0_ele"></div>
+            <div class="tar0_ele"></div>
+        </div>
+        <script>
+            QUnit.test("core", function (assert) {
+                assert.ok($('.tar0_ele').length == 3, 'length ok');
+
+                //获取成数组类型
+                var arr = $('.tar0_ele').get();
+
+                //确认arr不是$对象
+                assert.ok(!arr.addClass, 'is array');
+
+                //转换对象测试
+                assert.ok(!!$(arr).addClass, 'is $');
+            });
+        </script>
+    </div>
+
+    <div class="test_group">
+        <div id="tar1">
+            <div class="tar1_ele" id="tar1_ele_1"></div>
+            <div class="tar1_ele" id="tar1_ele_2"></div>
+            <div class="tar1_ele" id="tar1_ele_3"></div>
+        </div>
+        <script>
+            QUnit.test("addClass removeClass", function (assert) {
+                // 6次
+                assert.expect(6);
+
+                // 尝试添加一个
+                $('#tar1_ele_1').addClass('a');
+                assert.ok($('#tar1_ele_1').attr('class') == 'tar1_ele a', 'class ok');
+
+                // 尝试添加多个
+                $('#tar1_ele_1').addClass('b c');
+                assert.ok($('#tar1_ele_1').attr('class') == 'tar1_ele a b c', 'class ok 2');
+
+                // 尝试删掉多个class
+                $('#tar1_ele_1').removeClass('a b c');
+                assert.ok($('#tar1_ele_1').attr('class') == 'tar1_ele', 'class ok 3');
+
+                // 尝试函数方式添加
+                $('.tar1_ele').addClass(function (i, className) {
+                    assert.ok(className === 'tar1_ele', 'class function name ok ' + i);
+                    return 'func_plus';
+                });
+            });
+        </script>
+    </div>
+
+    <div class="test_group">
+        <div id="tar2">
+            <div class="tar2_ele" id="tar2_ele_1"></div>
+            <div class="tar2_ele" id="tar2_ele_2"></div>
+            <div class="tar2_ele" id="tar2_ele_3"></div>
+        </div>
+        <script>
+            QUnit.test("attr removeAttr (prop removeProp)", function (assert) {
+                // 5次
+                assert.expect(5);
+
+                // 获取属性
+                assert.ok($('#tar2_ele_1').attr('class') == 'tar2_ele', 'attr ok');
+
+                // 尝试添加多个
+                $('#tar2_ele_1').attr('testattr', 'a b c d');
+                assert.ok($('#tar2_ele_1').attr('testattr') == 'a b c d', 'attr ok 2');
+
+                // 删除属性（多个）
+                $('#tar2_ele_1').removeAttr('testattr class');
+                assert.ok(!$('#tar2_ele_1').attr('class'), 'removeAttr ok');
+
+                $('.tar2_ele').attr('class', function (i, cName) {
+                    assert.ok(cName == "tar2_ele", 'attr function ok ' + i);
+                });
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar3">
+            <div class="tar3_ele" id="tar3_ele_1">I am text</div>
+        </div>
+        <script>
+            QUnit.test("text (html val)", function (assert) {
+                // 获取属性
+                assert.ok($('#tar3_ele_1').text() == 'I am text', 'text ok');
+                $('#tar3_ele_1').text('text change')
+                assert.ok($('#tar3_ele_1').text() == 'text change', 'text change ok');
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar4">
+            <div class="tar4_ele" id="tar4_ele_1" style="border:solid 2px red;">I am text</div>
+        </div>
+        <script>
+            QUnit.test("css", function (assert) {
+                // 获取属性
+                assert.ok($('#tar4_ele_1').css('border-top-width') == '2px', 'css get ok');
+
+                $('#tar4_ele_1').css('border', 'solid 4px blue');
+
+                assert.ok($('#tar4_ele_1').css('border-top-width') == '4px', 'css set ok');
+
+            });
+        </script>
+    </div>
+</body>
+
+</html>
