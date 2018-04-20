@@ -40,5 +40,10 @@ Object.assign(xQuePrototype, {
         return fixToEle(this, val, (target, ele) => {
             target.appendChild(ele);
         });
+    },
+    prepend(val) {
+        return fixToEle(this, val, (target, ele) => {
+            target.insertBefore(ele, target.firstChild);
+        });
     }
 });

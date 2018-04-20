@@ -134,6 +134,50 @@
             });
         </script>
     </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar5">
+            <div class="tar5_other">I am tar5 other</div>
+            <div class="tar5_ele" id="tar5_ele_1">
+                <div class="tar5_ele_in">I am tar5_ele_in</div>
+            </div>
+            <div class="tar5_ele" id="tar5_ele_2">
+                <div class="tar5_ele_in">I am tar5_ele_in</div>
+            </div>
+        </div>
+        <script>
+            QUnit.test("append (prepend)", function (assert) {
+                // 6次
+                assert.expect(6);
+
+                // 添加元素
+                $('#tar5_ele_1').append('<div>div1</div>');
+
+                // 获取属性
+                assert.ok($('#tar5_ele_1')[0].children.length == 2, 'append ok');
+
+                $('#tar5_ele_1').append(function (i, eleStr) {
+                    eleStr = eleStr.replace(/\n/g, "").replace(/\s/g, "");
+
+                    assert.ok(eleStr == '<divclass="tar5_ele_in">Iamtar5_ele_in</div><div>div1</div>',
+                        'eleStr ok');
+
+                    return '<div>div2</div>';
+                });
+
+                assert.ok($('#tar5_ele_1')[0].children.length == 3, 'append ok 2');
+
+                // 设定自定义数据
+                $('.tar5_other')[0].customData = "I am custom";
+
+                $('.tar5_ele').append($('.tar5_other'));
+
+                assert.ok($('#tar5_ele_1')[0].children.length == 4, 'append ok 3');
+                assert.ok($('#tar5_ele_2')[0].children.length == 2, 'append ok 4');
+                assert.ok($('#tar5_ele_2')[0].children[1].customData == "I am custom", 'custom data ok');
+            });
+        </script>
+    </div>
 </body>
 
 </html>

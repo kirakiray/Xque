@@ -137,20 +137,27 @@
 
     // 合并方法
     Object.assign(xQuePrototype, {
-        addClass(val) {
-            return singleIn(this, val, (target, value) => {
-                splitSpace(value, value => {
-                    target.classList.add(value);
-                });
-            }, target => target.classList.value);
-        },
-        removeClass(val) {
-            return singleIn(this, val, (target, value) => {
-                splitSpace(value, value => {
-                    target.classList.remove(value);
-                });
-            }, target => target.classList.value);
-        },
+        // addClass(val) {
+        //     return singleIn(this, val, (target, value) => {
+        //         splitSpace(value, value => {
+        //             target.classList.add(value);
+        //         });
+        //     }, target => target.classList.value);
+        // },
+        // removeClass(val) {
+        //     return singleIn(this, val, (target, value) => {
+        //         splitSpace(value, value => {
+        //             target.classList.remove(value);
+        //         });
+        //     }, target => target.classList.value);
+        // },
+        // toggleClass(val) {
+        //     return singleIn(this, val, (target, value) => {
+        //         splitSpace(value, value => {
+        //             target.classList.toggle(value);
+        //         });
+        //     }, target => target.classList.value);
+        // },
         attr(...args) {
             return pairIn(this, args, (target, key, value) => {
                 target.setAttribute(key, value);
@@ -202,8 +209,38 @@
             } else {
                 return this[index];
             }
+        },
+        eq(index) {
+            return $(this[index]);
         }
     });
+
+    // class操作
+    let classControlObj = {
+        addClass: (target, value) => {
+            target.classList.add(value);
+        },
+        removeClass: (target, value) => {
+            target.classList.remove(value);
+        },
+        toggleClass: (target, value) => {
+            target.classList.toggle(value);
+        }
+    };
+
+    for (let funcName in classControlObj) {
+        // 获取函数
+        let func = classControlObj[funcName];
+
+        // 初始化操作
+        xQuePrototype[funcName] = function (val) {
+            return singleIn(this, val, (target, value) => {
+                splitSpace(value, value => {
+                    func(target, value);
+                });
+            }, target => target.classList.value);
+        };
+    }
 
     // 修正为元素
 const fixToEle = (tars, val, func) => {
@@ -246,6 +283,11 @@ Object.assign(xQuePrototype, {
     append(val) {
         return fixToEle(this, val, (target, ele) => {
             target.appendChild(ele);
+        });
+    },
+    prepend(val) {
+        return fixToEle(this, val, (target, ele) => {
+            target.insertBefore(ele, target.firstChild);
         });
     }
 });

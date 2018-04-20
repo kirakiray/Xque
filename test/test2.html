@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>test</title>
+    <script src="../dist/xque.js"></script>
+    <!-- <script src="jquery-3.3.1.js"></script> -->
+</head>
+
+<body>
+    <div id="a" class="aaa bbb" style="border:4px solid #aaa;padding:5px;margin:10px;">id a</div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <span id="kkspan" style="color:red;">kkspankkspan</span>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div id="b">id b</div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div id="c">id c</div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div style="position:relative;">
+        <div id="testEle" style="z-index:10;position:fixed;bottom:10px;left:10px;width:200px;height:50px;background-color:rgba(0,0,0,.4);">testEle</div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div class="a" style="position:relative;height:100px;background-color:#eee;">a1
+        <div id="posEle" style="position: absolute;top:50px;">absolute element</div>
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <div class="a">a2
+    </div>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+</body>
+<script>
+    // $('div').append('<span style="color:red;">kkk</span>');
+
+    $('#kkspan')[0].aa = 10000;
+
+    $('div').append($('#kkspan'));
+</script>
+
+</html>
