@@ -19,8 +19,13 @@
     // 是否函数(包括异步函数)
     const isFunction = v => getType(v).search('function') > -1;
 
+    const isString = v => getType(v) === "string";
+
     // 是否 undefined
     const isUndefined = v => v === undefined;
+
+    // 是否像数组（包括数组）
+    const isArrayLike = (obj) => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
 
     // 生成数组
     const makeArray = arr => Array.from(arr);
@@ -125,6 +130,16 @@
         });
     };
 
+    // 判断元素是否符合条件
+    const meetsEle = (ele, expr) => {
+        var fadeParent = DOCUMENT.createElement('div');
+        if (ele === DOCUMENT) {
+            return false;
+        }
+        fadeParent.appendChild(ele.cloneNode(false));
+        return 0 in findElement(expr, fadeParent) ? true : false;
+    }
+
     // main
     // 主体class
     // 只接受数组
@@ -182,6 +197,12 @@
                 });
             });
         },
+        css(...args) {
+            return pairIn(this, args, (target, key, value) => {
+                value = fixNumber(value);
+                target.style[key] = value;
+            }, (target, key) => getStyle(target)[key]);
+        },
         text(val) {
             return singleIn(this, val, (target, value) => {
                 target.textContent = value;
@@ -197,33 +218,23 @@
                 target.value = value;
             }, target => target.vaule, 1);
         },
-        css(...args) {
-            return pairIn(this, args, (target, key, value) => {
-                value = fixNumber(value);
-                target.style[key] = value;
-            }, (target, key) => getStyle(target)[key]);
-        },
-        get(index) {
-            if (isUndefined(index)) {
-                return makeArray(this);
-            } else {
-                return this[index];
-            }
-        },
-        eq(index) {
-            return $(this[index]);
+        each(callback) {
+            each(this, (e, i) => {
+                callback(i, e);
+            });
+            return this;
         }
     });
 
     // class操作
     let classControlObj = {
-        addClass: (target, value) => {
+        addClass(target, value) {
             target.classList.add(value);
         },
-        removeClass: (target, value) => {
+        removeClass(target, value) {
             target.classList.remove(value);
         },
-        toggleClass: (target, value) => {
+        toggleClass(target, value) {
             target.classList.toggle(value);
         }
     };
@@ -242,9 +253,13 @@
         };
     }
 
-    //<!--domControl-->
+    //<!--dom-->
 
-    //<!--boxModule-->
+    //<!--box-->
+
+    //<!--filter-->
+
+    //<!--event-->
 
     // 外部方法
     let $ = function (selector, context) {
@@ -257,14 +272,25 @@
         // 针对不同类型做处理
         switch (type) {
             case STR_string:
-                elems = findElement(selector, context);
+                if (selector.search('<') > -1) {
+                    elems = parseDom(selector);
+                } else {
+                    if (isArrayLike(context)) {
+                        elems = [];
+                        each(makeArray(context), ele => {
+                            let eles = findElement(ele, selector);
+                            elems.splice(elems.length, 0, ...eles);
+                        });
+                    } else {
+                        elems = findElement(selector, context);
+                    }
+                }
                 break;
             case STR_array:
                 elems = selector;
                 break;
             default:
-                let len = selector.length;
-                if (typeof len === "number" && len >= 0) {
+                if (isArrayLike(selector)) {
                     // 类数组
                     elems = makeArray(selector);
                 } else if (isFunction(selector)) {
@@ -276,6 +302,7 @@
                             selector($)
                         }, false);
                     }
+                    elems = [DOCUMENT];
                 } else if (selector) {
                     // 其他类型
                     elems = [selector];
@@ -286,7 +313,7 @@
     }
 
     // 修正原型链
-    $.prototype = $.fn = XQue.prototype = XQue.fn = xQuePrototype;
+    $.prototype = $.fn = XQue.prototype = xQuePrototype;
 
     // 暴露到外部
     glo.$ = $;

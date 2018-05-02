@@ -19,8 +19,13 @@
     // 是否函数(包括异步函数)
     const isFunction = v => getType(v).search('function') > -1;
 
+    const isString = v => getType(v) === "string";
+
     // 是否 undefined
     const isUndefined = v => v === undefined;
+
+    // 是否像数组（包括数组）
+    const isArrayLike = (obj) => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
 
     // 生成数组
     const makeArray = arr => Array.from(arr);
@@ -125,6 +130,16 @@
         });
     };
 
+    // 判断元素是否符合条件
+    const meetsEle = (ele, expr) => {
+        var fadeParent = DOCUMENT.createElement('div');
+        if (ele === DOCUMENT) {
+            return false;
+        }
+        fadeParent.appendChild(ele.cloneNode(false));
+        return 0 in findElement(expr, fadeParent) ? true : false;
+    }
+
     // main
     // 主体class
     // 只接受数组
@@ -182,6 +197,12 @@
                 });
             });
         },
+        css(...args) {
+            return pairIn(this, args, (target, key, value) => {
+                value = fixNumber(value);
+                target.style[key] = value;
+            }, (target, key) => getStyle(target)[key]);
+        },
         text(val) {
             return singleIn(this, val, (target, value) => {
                 target.textContent = value;
@@ -197,33 +218,23 @@
                 target.value = value;
             }, target => target.vaule, 1);
         },
-        css(...args) {
-            return pairIn(this, args, (target, key, value) => {
-                value = fixNumber(value);
-                target.style[key] = value;
-            }, (target, key) => getStyle(target)[key]);
-        },
-        get(index) {
-            if (isUndefined(index)) {
-                return makeArray(this);
-            } else {
-                return this[index];
-            }
-        },
-        eq(index) {
-            return $(this[index]);
+        each(callback) {
+            each(this, (e, i) => {
+                callback(i, e);
+            });
+            return this;
         }
     });
 
     // class操作
     let classControlObj = {
-        addClass: (target, value) => {
+        addClass(target, value) {
             target.classList.add(value);
         },
-        removeClass: (target, value) => {
+        removeClass(target, value) {
             target.classList.remove(value);
         },
-        toggleClass: (target, value) => {
+        toggleClass(target, value) {
             target.classList.toggle(value);
         }
     };
@@ -258,7 +269,7 @@ const fixToEle = (tars, val, func) => {
         let eles = value;
 
         // 根据不同数据类型进行转换
-        if (valueType === "string") {
+        if (valueType === STR_string) {
             // 转换字符串类型
             eles = parseDom(value);
         } else if (value instanceof Element) {
@@ -268,7 +279,7 @@ const fixToEle = (tars, val, func) => {
 
         // 修正元素数组
         if (tarLen > 0) {
-            eles = eles.map(e => e.cloneNode(true));
+            eles = [].map.call(eles, e => e.cloneNode(true));
         }
 
         // 全部添加进去
@@ -289,8 +300,91 @@ Object.assign(xQuePrototype, {
         return fixToEle(this, val, (target, ele) => {
             target.insertBefore(ele, target.firstChild);
         });
+    },
+    before(val) {
+        return fixToEle(this, val, (target, ele) => {
+            target.parentNode.insertBefore(ele, target);
+        });
+    },
+    after(val) {
+        return fixToEle(this, val, (target, ele) => {
+            var parnode = target.parentNode;
+            if (parnode.lastChild === target) {
+                parnode.appendChild(ele);
+            } else {
+                parnode.insertBefore(ele, target.nextSibling);
+            }
+        });
+    },
+    wrap(val) {
+        return fixToEle(this, val, (target, ele) => {
+            target.parentNode.insertBefore(ele, target);
+            ele.appendChild(target);
+        });
+    },
+    unwrap() {
+        var arr = [];
+        each(this, function (e) {
+            var par = e.parentNode;
+            par.parentNode.insertBefore(e, par);
+            if (arr.indexOf(par) === -1) {
+                arr.push(par);
+            }
+        });
+        $(arr).remove();
+        return this;
+    },
+    wrapInner(val) {
+        return fixToEle(this, val, (target, ele) => {
+            each(makeArray(target.childNodes), function (e2) {
+                ele.appendChild(e2);
+            });
+            target.appendChild(ele);
+        });
+    },
+    wrapAll(val) {
+        if (isString(val)) {
+            val = parseDom(val);
+        }
+        let tar = this.eq(0);
+        tar.before(val = $(val));
+        each(this, e => val.append(e));
+        return this;
+    },
+    replaceWith(val) {
+        return this.before(val).remove();
+    },
+    empty() {
+        each(this, e => {
+            e.innerHTML = "";
+        });
+    },
+    remove(expr) {
+        each(this, e => {
+            if (expr) {
+                if (!meetsEle(e, expr)) return;
+            }
+            e.parentNode.removeChild(e);
+        });
     }
 });
+
+let dom_in_turn_Obj = {
+    append: "appendTo",
+    prepend: "prependTo",
+    after: "insertAfter",
+    before: "insertBefore"
+};
+
+for (let k in dom_in_turn_Obj) {
+    // 获取要定义的函数名
+    let funcName = dom_in_turn_Obj[k];
+
+    // 参数调转
+    xQuePrototype[funcName] = function (content) {
+        $(content)[k](this);
+    }
+}
 
     // 盒模型相关方法
 // width height innerWidth innerHeight outerWidth outerHeight
@@ -385,6 +479,101 @@ Object.assign(xQuePrototype, {
     }
 });
 
+    const filterBase = (tars, val, meetcall, notmeetcall) => {
+    let arr = [];
+    if (isString(val)) {
+        each(tars, ele => {
+            if (meetsEle(ele, val)) {
+                meetcall && meetcall(arr, ele);
+            } else {
+                notmeetcall && notmeetcall(arr, ele);
+            }
+        });
+    } else if (isArrayLike(val)) {
+        each(tars, ele => {
+            each(val, val => {
+                if (ele === val) {
+                    meetcall && meetcall(arr, ele);
+                } else {
+                    notmeetcall && notmeetcall(arr, ele);
+                }
+            });
+        });
+    } else if (val instanceof Element) {
+        each(tars, ele => {
+            if (val === ele) {
+                meetcall && meetcall(arr, ele);
+            } else {
+                notmeetcall && notmeetcall(arr, ele);
+            }
+        });
+    } else if (isFunction(val)) {
+        each(tars, (ele, i) => {
+            if (val(i, ele)) {
+                meetcall && meetcall(arr, ele);
+            } else {
+                notmeetcall && notmeetcall(arr, ele);
+            }
+        });
+    }
+    return $(arr);
+}
+
+Object.assign(xQuePrototype, {
+    eq(index) {
+        return $(this[index]);
+    },
+    get(index) {
+        if (isUndefined(index)) {
+            return makeArray(this);
+        } else {
+            return this[index];
+        }
+    },
+    first() {
+        return $(this[0]);
+    },
+    last() {
+        return $(this.length - 1);
+    },
+    hasClass(val) {
+        // 默认没有
+        let hasClass = !1;
+        each(this, e => {
+            e.classList.contains(val) && (hasClass = !0);
+        });
+        return hasClass;
+    },
+    // 筛选器
+    filter(val) {
+        return filterBase(this, val, (arr, ele) => arr.push(ele));
+    },
+    // 否定版的筛选器
+    not(val) {
+        return filterBase(this, val, 0, (arr, ele) => arr.push(ele));
+    },
+    // 是否存在表达式内的元素
+    is(val) {
+        return 0 in this.filter(val);
+    },
+    map(callback) {
+        let arr = [];
+        each(this, (e, i) => {
+            arr.push(callback(i, e));
+        });
+        return $(arr);
+    },
+    slice(...args) {
+        let newArr = [].slice.call(this, ...args);
+        return $(newArr);
+    },
+    find(expr) {
+        return $(expr, this);
+    }
+});
+
+    
+
     // 外部方法
     let $ = function (selector, context) {
         // 获取type
@@ -396,14 +585,25 @@ Object.assign(xQuePrototype, {
         // 针对不同类型做处理
         switch (type) {
             case STR_string:
-                elems = findElement(selector, context);
+                if (selector.search('<') > -1) {
+                    elems = parseDom(selector);
+                } else {
+                    if (isArrayLike(context)) {
+                        elems = [];
+                        each(makeArray(context), ele => {
+                            let eles = findElement(ele, selector);
+                            elems.splice(elems.length, 0, ...eles);
+                        });
+                    } else {
+                        elems = findElement(selector, context);
+                    }
+                }
                 break;
             case STR_array:
                 elems = selector;
                 break;
             default:
-                let len = selector.length;
-                if (typeof len === "number" && len >= 0) {
+                if (isArrayLike(selector)) {
                     // 类数组
                     elems = makeArray(selector);
                 } else if (isFunction(selector)) {
@@ -415,6 +615,7 @@ Object.assign(xQuePrototype, {
                             selector($)
                         }, false);
                     }
+                    elems = [DOCUMENT];
                 } else if (selector) {
                     // 其他类型
                     elems = [selector];
@@ -425,7 +626,7 @@ Object.assign(xQuePrototype, {
     }
 
     // 修正原型链
-    $.prototype = $.fn = XQue.prototype = XQue.fn = xQuePrototype;
+    $.prototype = $.fn = XQue.prototype = xQuePrototype;
 
     // 暴露到外部
     glo.$ = $;

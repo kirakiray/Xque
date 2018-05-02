@@ -50,9 +50,9 @@
             <div class="tar1_ele" id="tar1_ele_3"></div>
         </div>
         <script>
-            QUnit.test("addClass removeClass", function (assert) {
-                // 6次
-                assert.expect(6);
+            QUnit.test("addClass removeClass hasClass", function (assert) {
+                // 7次
+                assert.expect(7);
 
                 // 尝试添加一个
                 $('#tar1_ele_1').addClass('a');
@@ -71,6 +71,8 @@
                     assert.ok(className === 'tar1_ele', 'class function name ok ' + i);
                     return 'func_plus';
                 });
+
+                assert.ok($('.tar1_ele').hasClass('tar1_ele'), "hasClass ok");
             });
         </script>
     </div>
@@ -146,7 +148,7 @@
             </div>
         </div>
         <script>
-            QUnit.test("append (prepend)", function (assert) {
+            QUnit.test("append (prepend before after)", function (assert) {
                 // 6次
                 assert.expect(6);
 
@@ -178,6 +180,60 @@
             });
         </script>
     </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar6">
+            <div class="tar6_ele" id="tar6_ele_1">I am text</div>
+            <div class="tar6_ele" id="tar6_ele_2">I am text</div>
+        </div>
+        <script>
+            QUnit.test("wrap wrapAll unwrap", function (assert) {
+                // 获取属性
+                $('.tar6_ele').wrap(function (i) {
+                    return '<div class="wrap_container_' + i + '"></div>';
+                });
+
+                assert.ok($('.wrap_container_0').length == 1, 'warp container ok 1');
+                assert.ok($('.wrap_container_1').length == 1, 'warp container ok 2');
+                assert.ok($('#tar6_ele_1')[0].parentNode == $('.wrap_container_0')[0], 'warp container ok 3');
+
+                $('.tar6_ele').wrapAll('<div class="wrapall_container"></div>');
+                assert.ok($('.wrapall_container')[0].children.length == 2, 'wrapall container ok 1');
+                assert.ok($('.wrap_container_0')[0].children.length == 1, 'wrapall container ok 2');
+                assert.ok($('.wrap_container_1')[0].children.length == 0, 'wrapall container ok 3');
+
+                $('.tar6_ele').unwrap();
+                assert.ok($('.wrap_container_0')[0].children.length == 2, 'unwrap ok');
+
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar7">
+            <div class="tar7_ele" id="tar7_ele_1">I am text</div>
+            <div class="tar7_ele" test="1">I am text</div>
+            <div class="tar7_ele">I am text</div>
+        </div>
+        <script>
+            QUnit.test("filter is not", function (assert) {
+                assert.ok($('.tar7_ele').filter('[test]').length == 1, "filter ok 1");
+                assert.ok($('.tar7_ele').filter(document.querySelector('.tar7_ele[test]')).length == 1,
+                    "filter ok 2");
+                assert.ok($('.tar7_ele').filter([document.querySelector('.tar7_ele[test]')]).length == 1,
+                    "filter ok 3");
+                assert.ok($('.tar7_ele').filter(function (i, e) {
+                    if (e.getAttribute('test')) {
+                        return true;
+                    }
+                }).length === 1, "filter ok 4");
+                assert.ok($('.tar7_ele').not(document.querySelector('.tar7_ele[test]')).length == 2, "not ok 2");
+                assert.ok($('.tar7_ele').not('[test]').length == 2, "not ok 1");
+            });
+        </script>
+    </div>
+
+
 </body>
 
 </html>

@@ -1,2 +1,2 @@
-# xque
+# Xque
 a smarty jQuery
