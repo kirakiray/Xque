@@ -17,7 +17,7 @@ const fixToEle = (tars, val, func) => {
         if (valueType === STR_string) {
             // 转换字符串类型
             eles = parseDom(value);
-        } else if (value instanceof Element) {
+        } else if (isElement(value)) {
             // 判断是否元素，是的话进行克隆
             eles = [value];
         }
@@ -32,6 +32,42 @@ const fixToEle = (tars, val, func) => {
             func(target, ele);
         });
     }, target => target.innerHTML);
+}
+
+// 映射$实例数据
+const mapClone = (cloneEle, ele) => {
+    // 自定义数据
+    cloneEle[XQUEKEY] = assign({}, getData(ele));
+
+    // 自定义事件
+    let eveData = getEventData(ele);
+    let cloneEveData = getEventData(cloneEle);
+
+    for (let eventName in eveData) {
+        let eves = eveData[eventName];
+        let cloneEves = cloneEveData[eventName] = [];
+
+        each(eves, eData => {
+            let cloneEData = assign({}, eData);
+            cloneEves.push(cloneEData);
+            cloneEle.addEventListener(eventName, cloneEData.handle);
+        });
+    }
+}
+
+// 映射子元素
+const mapCloneToChilds = (cloneEle, ele) => {
+    let cloneChilds = Array.from(cloneEle.children);
+    let childs = ele.children;
+
+    each(cloneChilds, (cloneEle, i) => {
+        let ele = childs[i];
+        mapClone(cloneEle, ele);
+
+        // 递归
+        mapCloneToChilds(cloneEle, ele);
+    });
+
 }
 
 // 节点操控方法
@@ -111,6 +147,22 @@ Object.assign(xQuePrototype, {
             }
             e.parentNode.removeChild(e);
         });
+    },
+    clone(withData, deepData) {
+        return this.map((i, ele) => {
+            let cloneEle = ele.cloneNode(TRUE);
+
+            // 深复制当前元素
+            if (withData) {
+                mapClone(cloneEle, ele);
+            }
+
+            // 深复制子元素
+            if (deepData) {
+                mapCloneToChilds(cloneEle, ele);
+            }
+            return cloneEle;
+        });
     }
 });
 
@@ -118,7 +170,8 @@ let dom_in_turn_Obj = {
     append: "appendTo",
     prepend: "prependTo",
     after: "insertAfter",
-    before: "insertBefore"
+    before: "insertBefore",
+    replaceWith: "replaceAll"
 };
 
 for (let k in dom_in_turn_Obj) {

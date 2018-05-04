@@ -3,7 +3,8 @@
     "version": "1.0.0",
     "description": "Zepto replacer",
     "scripts": {
-        "build": "node scripts/build.js"
+        "watch": "node scripts/watch.js",
+        "ajaxtest": "node --inspect scripts/ajaxtest.js"
     },
     "author": "YAO",
     "license": "MIT"

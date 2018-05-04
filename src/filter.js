@@ -18,7 +18,7 @@ const filterBase = (tars, val, meetcall, notmeetcall) => {
                 }
             });
         });
-    } else if (val instanceof Element) {
+    } else if (isElement(val)) {
         each(tars, ele => {
             if (val === ele) {
                 meetcall && meetcall(arr, ele);
@@ -28,7 +28,7 @@ const filterBase = (tars, val, meetcall, notmeetcall) => {
         });
     } else if (isFunction(val)) {
         each(tars, (ele, i) => {
-            if (val(i, ele)) {
+            if (val.call(ele, i, ele)) {
                 meetcall && meetcall(arr, ele);
             } else {
                 notmeetcall && notmeetcall(arr, ele);
@@ -38,9 +38,54 @@ const filterBase = (tars, val, meetcall, notmeetcall) => {
     return $(arr);
 }
 
+const propKey = (expr, key, tars) => {
+    let arr = [];
+    each(tars, tar => {
+        tar = tar[key];
+        if (!tar || arr.indexOf(tar) != -1 || (expr && !meetsEle(tar, expr))) {
+            return;
+        }
+        arr.push(tar);
+    });
+    return $(arr);
+}
+
+const nuExpr = (tars, key, filter, lastExpr) => {
+    let arr = [];
+    let getEle = tar => {
+        let nextEle = tar[key];
+        if (nextEle) {
+            if (lastExpr) {
+                if ((getType(lastExpr) === STR_string && meetsEle(nextEle, lastExpr)) || lastExpr === nextEle || (lastExpr instanceof Array && lastExpr.indexOf(nextEle) > -1)) {
+                    return;
+                }
+            }
+            if ((!filter || meetsEle(nextEle, filter)) && arr.indexOf(nextEle) === -1) {
+                arr.push(nextEle);
+            }
+            getEle(nextEle);
+        }
+    };
+    each(tars, tar => {
+        getEle(tar);
+    });
+    getEle = null;
+    return $(arr);
+};
+
 Object.assign(xQuePrototype, {
+    slice(...args) {
+        let newArr = [].slice.call(this, ...args);
+        return $(newArr);
+    },
     eq(index) {
-        return $(this[index]);
+        return this.slice(index, index + 1 || undefined);
+    },
+    first() {
+        return this.eq(0);
+    },
+    last() {
+        return this.eq(-1);
     },
     get(index) {
         if (isUndefined(index)) {
@@ -48,12 +93,6 @@ Object.assign(xQuePrototype, {
         } else {
             return this[index];
         }
-    },
-    first() {
-        return $(this[0]);
-    },
-    last() {
-        return $(this.length - 1);
     },
     hasClass(val) {
         // 默认没有
@@ -82,11 +121,60 @@ Object.assign(xQuePrototype, {
         });
         return $(arr);
     },
-    slice(...args) {
-        let newArr = [].slice.call(this, ...args);
-        return $(newArr);
-    },
     find(expr) {
         return $(expr, this);
+    },
+    has(expr) {
+        let arr = [];
+        each(this, e => {
+            (0 in $(expr, e)) && (arr.push(e));
+        });
+        return $(arr);
+    },
+    children(expr) {
+        let eles = [];
+        each(this, e => {
+            e.nodeType && each(makeArray(e.children), e => {
+                if (expr) {
+                    meetsEle(e, expr) && eles.push(e);
+                } else {
+                    eles.push(e);
+                }
+            });
+        });
+        return $(eles);
+    },
+    next(expr) {
+        return propKey(expr, "nextElementSibling", this);
+    },
+    prev(expr) {
+        return propKey(expr, "previousElementSibling", this);
+    },
+    parent(expr) {
+        return propKey(expr, "parentNode", this);
+    },
+    nextAll: function (filter) {
+        return nuExpr(this, 'nextElementSibling', filter);
+    },
+    prevAll: function (filter) {
+        return nuExpr(this, 'previousElementSibling', filter);
+    },
+    parents: function (filter) {
+        return nuExpr(this, 'parentNode', filter, DOCUMENT);
+    },
+    nextUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'nextElementSibling', filter, lastExpr);
+    },
+    prevUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'previousElementSibling', filter, lastExpr);
+    },
+    parentsUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'parentNode', filter, lastExpr);
+    },
+    siblings(expr) {
+        let _this = this;
+        return this.parent().children(expr).filter(function () {
+            if (_this.indexOf(this) === -1) return true;
+        });
     }
 });

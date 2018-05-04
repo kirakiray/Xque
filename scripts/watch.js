@@ -29,6 +29,10 @@ let mainFun = async () => {
     let eventCode = await readFile('src/event.js', 'utf8');
     basefile = basefile.replace('//<!--event-->', eventCode);
 
+    // ajax
+    let ajaxCode = await readFile('src/ajax.js', 'utf8');
+    basefile = basefile.replace('//<!--ajax-->', ajaxCode);
+
     if (beforeCode == basefile) {
         return;
     }

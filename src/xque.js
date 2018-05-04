@@ -11,6 +11,10 @@
     const STR_string = "string";
     const STR_array = "array";
 
+    const FALSE = !1;
+    const TRUE = !0;
+    const UNDEFINED = undefined;
+
     // function
     // 获取类型
     let objToString = Object.prototype.toString;
@@ -25,16 +29,34 @@
     const isUndefined = v => v === undefined;
 
     // 是否像数组（包括数组）
-    const isArrayLike = (obj) => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
+    const isArrayLike = obj => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
+
+    const isElement = obj => obj instanceof Element;
+
+    const {
+        defineProperty,
+        assign
+    } = Object;
 
     // 生成数组
     const makeArray = arr => Array.from(arr);
 
+    // 获得随机id
+    const getRandomId = () => Math.random().toString(32).substr(2);
+
     // 合并数组
     const merge = (mainArr, arr2) => mainArr.splice(mainArr.length, 0, ...arr2);
 
+    // 删除数组内的某项
+    const removeByArr = (arr, tar) => {
+        let id = arr.indexOf(tar);
+        if (id > -1) {
+            arr.splice(id, 1);
+        }
+    }
+
     // 遍历
-    const each = (arr, func) => arr.forEach(func);
+    const each = (arr, func) => arr.some((e, i) => func(e, i) === FALSE);
 
     // 获取样式
     const getStyle = getComputedStyle;
@@ -44,6 +66,10 @@
         let vArr = value.split(' ');
         each(vArr, e => func(e));
     }
+
+    // 关键key
+    const XQUEKEY = "XQUE_" + getRandomId();
+    const XQUEEVENTKEY = XQUEKEY + "_event";
 
     // 单个参数的拆分固定式
     // getFunc 非必须
@@ -132,6 +158,9 @@
 
     // 判断元素是否符合条件
     const meetsEle = (ele, expr) => {
+        if (ele === expr) {
+            return !0;
+        }
         var fadeParent = DOCUMENT.createElement('div');
         if (ele === DOCUMENT) {
             return false;
@@ -139,6 +168,12 @@
         fadeParent.appendChild(ele.cloneNode(false));
         return 0 in findElement(expr, fadeParent) ? true : false;
     }
+
+    // 获取元素的数据
+    const getData = ele => ele[XQUEKEY] || (ele[XQUEKEY] = {});
+
+    // 获取事件数据对象
+    const getEventData = ele => ele[XQUEEVENTKEY] || (ele[XQUEEVENTKEY] = {});
 
     // main
     // 主体class
@@ -151,7 +186,7 @@
     var xQuePrototype = Object.create(Array.prototype);
 
     // 合并方法
-    Object.assign(xQuePrototype, {
+    assign(xQuePrototype, {
         // addClass(val) {
         //     return singleIn(this, val, (target, value) => {
         //         splitSpace(value, value => {
@@ -194,6 +229,23 @@
             return singleIn(this, val, (target, value) => {
                 splitSpace(value, value => {
                     delete target[value];
+                });
+            });
+        },
+        data(...args) {
+            return pairIn(this, args, (target, key, value) => {
+                getData(target)[key] = value;
+            }, (target, key) => {
+                let data = {};
+                assign(data, target.dataset);
+                assign(data, getData(target));
+                return data[key];
+            });
+        },
+        removeData(val) {
+            return singleIn(this, val, (target, value) => {
+                splitSpace(value, value => {
+                    delete getData(target)[value];
                 });
             });
         },
@@ -253,13 +305,15 @@
         };
     }
 
-    //<!--dom-->
-
-    //<!--box-->
-
-    //<!--filter-->
-
-    //<!--event-->
+    const eachContext = (context, callback) => {
+        if (isArrayLike(context)) {
+            each(makeArray(context), ele => {
+                callback(ele);
+            });
+        } else {
+            callback(context);
+        }
+    }
 
     // 外部方法
     let $ = function (selector, context) {
@@ -267,7 +321,7 @@
         let type = getType(selector);
 
         // 元素
-        let elems;
+        let elems = [];
 
         // 针对不同类型做处理
         switch (type) {
@@ -275,15 +329,10 @@
                 if (selector.search('<') > -1) {
                     elems = parseDom(selector);
                 } else {
-                    if (isArrayLike(context)) {
-                        elems = [];
-                        each(makeArray(context), ele => {
-                            let eles = findElement(ele, selector);
-                            elems.splice(elems.length, 0, ...eles);
-                        });
-                    } else {
-                        elems = findElement(selector, context);
-                    }
+                    eachContext(context, ele => {
+                        let eles = findElement(selector, ele);
+                        merge(elems, eles);
+                    });
                 }
                 break;
             case STR_array:
@@ -304,13 +353,33 @@
                     }
                     elems = [DOCUMENT];
                 } else if (selector) {
-                    // 其他类型
-                    elems = [selector];
+                    if (context && isElement(selector)) {
+                        eachContext(context, ele => {
+                            let selectorTagName = selector.tagName.toLowerCase();
+                            let findEles = findElement(selectorTagName, ele);
+                            each(findEles, e => {
+                                (selector === e) && (elems.push(e));
+                            });
+                        });
+                    } else {
+                        // 其他类型
+                        elems = [selector];
+                    }
                 }
         }
 
         return new XQue(elems);
     }
+
+    //<!--dom-->
+
+    //<!--box-->
+
+    //<!--filter-->
+
+    //<!--event-->
+
+    //<!--ajax-->
 
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;

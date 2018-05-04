@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <title>xQue ajax test</title>
+    <link rel="stylesheet" href="qunit-1.15.0.css" />
+    <style>
+        .test_group {
+            margin-top: 50px;
+        }
+    </style>
+    <script src="qunit-1.15.0.js"></script>
+    <!-- <script src="jquery-3.3.1.js"></script> -->
+    <script src="../dist/xque.js"></script>
+</head>
+
+<body>
+    <h1 id="qunit-header">Xque ajax test</h1>
+    <h2 id="qunit-banner"></h2>
+    <ol id="qunit-tests"></ol>
+
+    <div class="test_group">
+        <img id="tarimg" style="display:block;width:190px;height:140px;background-color:#eee;border:none;">
+        <span id="progress"></span>
+        <script>
+            QUnit.asyncTest("ajax test", async function (assert) {
+                // 请求数据
+                let data = await $.ajax({
+                    url: "test.json",
+                    dataType: "json",
+                    headers: {
+                        a: "atest"
+                    }
+                });
+
+                assert.ok(data.val === "I am test json", 'json data ok');
+
+                // 请求数据
+                let imgFile = await $.ajax({
+                    // url: "https://pages.github.com/images/dashboard@2x.png",
+                    url: "http://localhost:8998/scripts/source/test.png",
+                    // dataType: "arraybuffer"
+                    dataType: "blob"
+                }).loading(e => {
+                    let percentage = Math.floor(e.loaded / e.total * 100) + "%";
+                    $('#progress').html(percentage);
+                });
+
+                let imgurl = URL.createObjectURL(imgFile);
+
+                $(tarimg).attr('src', imgurl);
+
+                assert.ok(!!imgurl, 'img ok');
+            });
+        </script>
+    </div>
+
+</body>
+
+</html>

@@ -11,6 +11,10 @@
     const STR_string = "string";
     const STR_array = "array";
 
+    const FALSE = !1;
+    const TRUE = !0;
+    const UNDEFINED = undefined;
+
     // function
     // 获取类型
     let objToString = Object.prototype.toString;
@@ -25,16 +29,34 @@
     const isUndefined = v => v === undefined;
 
     // 是否像数组（包括数组）
-    const isArrayLike = (obj) => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
+    const isArrayLike = obj => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
+
+    const isElement = obj => obj instanceof Element;
+
+    const {
+        defineProperty,
+        assign
+    } = Object;
 
     // 生成数组
     const makeArray = arr => Array.from(arr);
 
+    // 获得随机id
+    const getRandomId = () => Math.random().toString(32).substr(2);
+
     // 合并数组
     const merge = (mainArr, arr2) => mainArr.splice(mainArr.length, 0, ...arr2);
 
+    // 删除数组内的某项
+    const removeByArr = (arr, tar) => {
+        let id = arr.indexOf(tar);
+        if (id > -1) {
+            arr.splice(id, 1);
+        }
+    }
+
     // 遍历
-    const each = (arr, func) => arr.forEach(func);
+    const each = (arr, func) => arr.some((e, i) => func(e, i) === FALSE);
 
     // 获取样式
     const getStyle = getComputedStyle;
@@ -44,6 +66,10 @@
         let vArr = value.split(' ');
         each(vArr, e => func(e));
     }
+
+    // 关键key
+    const XQUEKEY = "XQUE_" + getRandomId();
+    const XQUEEVENTKEY = XQUEKEY + "_event";
 
     // 单个参数的拆分固定式
     // getFunc 非必须
@@ -132,6 +158,9 @@
 
     // 判断元素是否符合条件
     const meetsEle = (ele, expr) => {
+        if (ele === expr) {
+            return !0;
+        }
         var fadeParent = DOCUMENT.createElement('div');
         if (ele === DOCUMENT) {
             return false;
@@ -139,6 +168,12 @@
         fadeParent.appendChild(ele.cloneNode(false));
         return 0 in findElement(expr, fadeParent) ? true : false;
     }
+
+    // 获取元素的数据
+    const getData = ele => ele[XQUEKEY] || (ele[XQUEKEY] = {});
+
+    // 获取事件数据对象
+    const getEventData = ele => ele[XQUEEVENTKEY] || (ele[XQUEEVENTKEY] = {});
 
     // main
     // 主体class
@@ -151,7 +186,7 @@
     var xQuePrototype = Object.create(Array.prototype);
 
     // 合并方法
-    Object.assign(xQuePrototype, {
+    assign(xQuePrototype, {
         // addClass(val) {
         //     return singleIn(this, val, (target, value) => {
         //         splitSpace(value, value => {
@@ -194,6 +229,23 @@
             return singleIn(this, val, (target, value) => {
                 splitSpace(value, value => {
                     delete target[value];
+                });
+            });
+        },
+        data(...args) {
+            return pairIn(this, args, (target, key, value) => {
+                getData(target)[key] = value;
+            }, (target, key) => {
+                let data = {};
+                assign(data, target.dataset);
+                assign(data, getData(target));
+                return data[key];
+            });
+        },
+        removeData(val) {
+            return singleIn(this, val, (target, value) => {
+                splitSpace(value, value => {
+                    delete getData(target)[value];
                 });
             });
         },
@@ -253,6 +305,72 @@
         };
     }
 
+    const eachContext = (context, callback) => {
+        if (isArrayLike(context)) {
+            each(makeArray(context), ele => {
+                callback(ele);
+            });
+        } else {
+            callback(context);
+        }
+    }
+
+    // 外部方法
+    let $ = function (selector, context) {
+        // 获取type
+        let type = getType(selector);
+
+        // 元素
+        let elems = [];
+
+        // 针对不同类型做处理
+        switch (type) {
+            case STR_string:
+                if (selector.search('<') > -1) {
+                    elems = parseDom(selector);
+                } else {
+                    eachContext(context, ele => {
+                        let eles = findElement(selector, ele);
+                        merge(elems, eles);
+                    });
+                }
+                break;
+            case STR_array:
+                elems = selector;
+                break;
+            default:
+                if (isArrayLike(selector)) {
+                    // 类数组
+                    elems = makeArray(selector);
+                } else if (isFunction(selector)) {
+                    // 属于函数
+                    if (DOCUMENT.readyState === "complete") {
+                        selector($)
+                    } else {
+                        DOCUMENT.addEventListener('DOMContentLoaded', function () {
+                            selector($)
+                        }, false);
+                    }
+                    elems = [DOCUMENT];
+                } else if (selector) {
+                    if (context && isElement(selector)) {
+                        eachContext(context, ele => {
+                            let selectorTagName = selector.tagName.toLowerCase();
+                            let findEles = findElement(selectorTagName, ele);
+                            each(findEles, e => {
+                                (selector === e) && (elems.push(e));
+                            });
+                        });
+                    } else {
+                        // 其他类型
+                        elems = [selector];
+                    }
+                }
+        }
+
+        return new XQue(elems);
+    }
+
     // 修正为元素
 const fixToEle = (tars, val, func) => {
     // 获取需要添加目标元素的长度
@@ -272,7 +390,7 @@ const fixToEle = (tars, val, func) => {
         if (valueType === STR_string) {
             // 转换字符串类型
             eles = parseDom(value);
-        } else if (value instanceof Element) {
+        } else if (isElement(value)) {
             // 判断是否元素，是的话进行克隆
             eles = [value];
         }
@@ -287,6 +405,42 @@ const fixToEle = (tars, val, func) => {
             func(target, ele);
         });
     }, target => target.innerHTML);
+}
+
+// 映射$实例数据
+const mapClone = (cloneEle, ele) => {
+    // 自定义数据
+    cloneEle[XQUEKEY] = assign({}, getData(ele));
+
+    // 自定义事件
+    let eveData = getEventData(ele);
+    let cloneEveData = getEventData(cloneEle);
+
+    for (let eventName in eveData) {
+        let eves = eveData[eventName];
+        let cloneEves = cloneEveData[eventName] = [];
+
+        each(eves, eData => {
+            let cloneEData = assign({}, eData);
+            cloneEves.push(cloneEData);
+            cloneEle.addEventListener(eventName, cloneEData.handle);
+        });
+    }
+}
+
+// 映射子元素
+const mapCloneToChilds = (cloneEle, ele) => {
+    let cloneChilds = Array.from(cloneEle.children);
+    let childs = ele.children;
+
+    each(cloneChilds, (cloneEle, i) => {
+        let ele = childs[i];
+        mapClone(cloneEle, ele);
+
+        // 递归
+        mapCloneToChilds(cloneEle, ele);
+    });
+
 }
 
 // 节点操控方法
@@ -366,6 +520,22 @@ Object.assign(xQuePrototype, {
             }
             e.parentNode.removeChild(e);
         });
+    },
+    clone(withData, deepData) {
+        return this.map((i, ele) => {
+            let cloneEle = ele.cloneNode(TRUE);
+
+            // 深复制当前元素
+            if (withData) {
+                mapClone(cloneEle, ele);
+            }
+
+            // 深复制子元素
+            if (deepData) {
+                mapCloneToChilds(cloneEle, ele);
+            }
+            return cloneEle;
+        });
     }
 });
 
@@ -373,7 +543,8 @@ let dom_in_turn_Obj = {
     append: "appendTo",
     prepend: "prependTo",
     after: "insertAfter",
-    before: "insertBefore"
+    before: "insertBefore",
+    replaceWith: "replaceAll"
 };
 
 for (let k in dom_in_turn_Obj) {
@@ -499,7 +670,7 @@ Object.assign(xQuePrototype, {
                 }
             });
         });
-    } else if (val instanceof Element) {
+    } else if (isElement(val)) {
         each(tars, ele => {
             if (val === ele) {
                 meetcall && meetcall(arr, ele);
@@ -509,7 +680,7 @@ Object.assign(xQuePrototype, {
         });
     } else if (isFunction(val)) {
         each(tars, (ele, i) => {
-            if (val(i, ele)) {
+            if (val.call(ele, i, ele)) {
                 meetcall && meetcall(arr, ele);
             } else {
                 notmeetcall && notmeetcall(arr, ele);
@@ -519,9 +690,54 @@ Object.assign(xQuePrototype, {
     return $(arr);
 }
 
+const propKey = (expr, key, tars) => {
+    let arr = [];
+    each(tars, tar => {
+        tar = tar[key];
+        if (!tar || arr.indexOf(tar) != -1 || (expr && !meetsEle(tar, expr))) {
+            return;
+        }
+        arr.push(tar);
+    });
+    return $(arr);
+}
+
+const nuExpr = (tars, key, filter, lastExpr) => {
+    let arr = [];
+    let getEle = tar => {
+        let nextEle = tar[key];
+        if (nextEle) {
+            if (lastExpr) {
+                if ((getType(lastExpr) === STR_string && meetsEle(nextEle, lastExpr)) || lastExpr === nextEle || (lastExpr instanceof Array && lastExpr.indexOf(nextEle) > -1)) {
+                    return;
+                }
+            }
+            if ((!filter || meetsEle(nextEle, filter)) && arr.indexOf(nextEle) === -1) {
+                arr.push(nextEle);
+            }
+            getEle(nextEle);
+        }
+    };
+    each(tars, tar => {
+        getEle(tar);
+    });
+    getEle = null;
+    return $(arr);
+};
+
 Object.assign(xQuePrototype, {
+    slice(...args) {
+        let newArr = [].slice.call(this, ...args);
+        return $(newArr);
+    },
     eq(index) {
-        return $(this[index]);
+        return this.slice(index, index + 1 || undefined);
+    },
+    first() {
+        return this.eq(0);
+    },
+    last() {
+        return this.eq(-1);
     },
     get(index) {
         if (isUndefined(index)) {
@@ -529,12 +745,6 @@ Object.assign(xQuePrototype, {
         } else {
             return this[index];
         }
-    },
-    first() {
-        return $(this[0]);
-    },
-    last() {
-        return $(this.length - 1);
     },
     hasClass(val) {
         // 默认没有
@@ -563,67 +773,580 @@ Object.assign(xQuePrototype, {
         });
         return $(arr);
     },
-    slice(...args) {
-        let newArr = [].slice.call(this, ...args);
-        return $(newArr);
-    },
     find(expr) {
         return $(expr, this);
+    },
+    has(expr) {
+        let arr = [];
+        each(this, e => {
+            (0 in $(expr, e)) && (arr.push(e));
+        });
+        return $(arr);
+    },
+    children(expr) {
+        let eles = [];
+        each(this, e => {
+            e.nodeType && each(makeArray(e.children), e => {
+                if (expr) {
+                    meetsEle(e, expr) && eles.push(e);
+                } else {
+                    eles.push(e);
+                }
+            });
+        });
+        return $(eles);
+    },
+    next(expr) {
+        return propKey(expr, "nextElementSibling", this);
+    },
+    prev(expr) {
+        return propKey(expr, "previousElementSibling", this);
+    },
+    parent(expr) {
+        return propKey(expr, "parentNode", this);
+    },
+    nextAll: function (filter) {
+        return nuExpr(this, 'nextElementSibling', filter);
+    },
+    prevAll: function (filter) {
+        return nuExpr(this, 'previousElementSibling', filter);
+    },
+    parents: function (filter) {
+        return nuExpr(this, 'parentNode', filter, DOCUMENT);
+    },
+    nextUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'nextElementSibling', filter, lastExpr);
+    },
+    prevUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'previousElementSibling', filter, lastExpr);
+    },
+    parentsUntil: function (lastExpr, filter) {
+        return nuExpr(this, 'parentNode', filter, lastExpr);
+    },
+    siblings(expr) {
+        let _this = this;
+        return this.parent().children(expr).filter(function () {
+            if (_this.indexOf(this) === -1) return true;
+        });
     }
 });
 
-    
+    // jQuery 专用 Event原型对象
+let eventPrototype = {
+    preventDefault() {
+        this._pD();
+    },
+    isDefaultPrevented() {
+        return this.defaultPrevented;
+    },
+    stopPropagation() {
+        this._sP();
+    },
+    isPropagationStopped() {
+        return this.cancelBubble;
+    },
+    stopImmediatePropagation() {
+        this.isImmediatePropagationStopped = () => TRUE;
+        this._sIP();
+    },
+    isImmediatePropagationStopped: () => FALSE
+};
 
-    // 外部方法
-    let $ = function (selector, context) {
-        // 获取type
-        let type = getType(selector);
+// 初始化Event成jQuery.Event那样
+const initEvent = event => {
+    if (!event._pD) {
+        Object.defineProperties(event, {
+            _pD: {
+                value: event.preventDefault
+            },
+            _sP: {
+                value: event.stopPropagation
+            },
+            _sIP: {
+                value: event.stopImmediatePropagation
+            }
+        });
+        Object.assign(event, eventPrototype);
+    }
+    return event;
+}
 
-        // 元素
-        let elems;
+let MOUSEEVENT = MouseEvent;
+let TOUCHEVENT = TouchEvent;
+// 修正 Event class 用的数据表
+let eventsMap = {
+    click: MOUSEEVENT,
+    mousedown: MOUSEEVENT,
+    mouseup: MOUSEEVENT,
+    mousemove: MOUSEEVENT,
+    mouseenter: MOUSEEVENT,
+    mouseleave: MOUSEEVENT,
+    touchstart: TOUCHEVENT,
+    touchend: TOUCHEVENT,
+    touchmove: TOUCHEVENT
+};
 
-        // 针对不同类型做处理
-        switch (type) {
-            case STR_string:
-                if (selector.search('<') > -1) {
-                    elems = parseDom(selector);
+// 生成Event
+let createEvent = $.Event = (type, eventInit) => {
+    let TarEvent = eventsMap[type] || Event;
+    return initEvent(new TarEvent(type, eventInit));
+};
+
+// 获取事件数据
+const getEventTypeData = (ele, type) => {
+    let data = getEventData(ele);
+    return data[type] || (data[type] = []);
+};
+
+// 触发事件
+const trigger = (eles, type, data, isHandle) => {
+    each(eles, ele => {
+        if (isElement(ele)) {
+            let event;
+            if (type instanceof Event) {
+                event = type;
+            } else {
+                // 获取事件对象
+                if (!isHandle) {
+                    event = createEvent(type, {
+                        bubbles: TRUE,
+                        cancelable: TRUE
+                    });
                 } else {
-                    if (isArrayLike(context)) {
-                        elems = [];
-                        each(makeArray(context), ele => {
-                            let eles = findElement(ele, selector);
-                            elems.splice(elems.length, 0, ...eles);
-                        });
-                    } else {
-                        elems = findElement(selector, context);
+                    event = new Event(type, {
+                        cancelable: TRUE
+                    });
+                }
+            }
+
+            data && defineProperty(event, '_argData', {
+                value: data
+            });
+
+            // 触发事件
+            ele.dispatchEvent(event);
+        } else {
+            // 自定义数据
+            // 获取事件对象
+            let eveArr = getEventTypeData(ele, type);
+
+            // 新的事件数组
+            let newArr = [];
+
+            let isBreak = 0;
+            // 遍历事件数组
+            each(eveArr, fData => {
+                // 不是一次性的就加入
+                if (!fData.isOne) {
+                    newArr.push(fData);
+                }
+
+                // 是否弹出
+                if (isBreak) {
+                    return;
+                }
+
+                // 生成 event对象
+                let event = createEvent(type);
+
+                // 参数修正
+                let args = [event];
+                if (data) {
+                    args.push(data);
+                }
+
+                // 判断是否有on上的data
+                let onData = fData.data;
+                if (!isUndefined(onData)) {
+                    event.data = onData;
+                }
+
+                // 触发callback
+                fData.fn(...args);
+
+                // 删除数据
+                delete event.data;
+
+                // 判断是否不用进行下去了
+                if (event.isImmediatePropagationStopped()) {
+                    isBreak = 1;
+                }
+            });
+
+            // 重新设置事件对象数据
+            let eventBase = getEventData(ele);
+            eventBase[type] = newArr;
+        }
+    });
+    return eles;
+};
+
+// 事件注册
+const on = (eles, events, selector, data, fn, isOne) => {
+    // 事件字符串拆分
+    events = events.split(' ');
+
+    // 修正变量
+    if (isFunction(selector)) {
+        fn = selector;
+        selector = data = UNDEFINED;
+    } else {
+        // 判断selector是data还是selector
+        if (isString(selector)) {
+            // 是selector
+            // 判断data是 fn 还是 data
+            if (isFunction(data)) {
+                fn = data;
+                data = UNDEFINED;
+            }
+        } else {
+            fn = data;
+            data = selector;
+            selector = UNDEFINED;
+        }
+    }
+
+    // 没有注册函数就别瞎搅和了
+    if (!fn) {
+        console.error('no function =>', fn);
+        return;
+    }
+
+    each(eles, ele => {
+        each(events, eventName => {
+            // 事件函数寄存对象
+            let funcData = {
+                fn,
+                isOne,
+                data,
+                selector
+            };
+
+            // 属于事件元素
+            if (isElement(ele)) {
+                let eventHandle = function (e) {
+                    // 初始化事件对象
+                    initEvent(e);
+
+                    // 自定义函数数据
+                    e.data = data;
+
+                    // 原始数据
+                    e.originalEvent = e;
+
+                    let argData = e._argData;
+                    if (argData && !isArrayLike(argData)) {
+                        argData = [argData];
+                    }
+
+                    // 目标
+                    let tar = this;
+
+                    // 是否可以运行
+                    let canRun = 1;
+
+                    if (selector) {
+                        let currentTarget = $(e.target).parents(selector);
+                        if (0 in currentTarget) {
+                            tar = currentTarget[0];
+                        } else {
+                            canRun = 0;
+                        }
+                    }
+
+                    if (canRun) {
+                        // 执行事件函数
+                        if (argData) {
+                            fn.call(tar, e, ...argData);
+                        } else {
+                            fn.call(tar, e);
+                        }
+                    }
+
+                    // 删除事件实例上的自定义数据
+                    delete e.data;
+                    delete e.originalEvent;
+
+                    // 判断是否一次性事件
+                    if (isOne) {
+                        ele.removeEventListener(eventName, eventHandle);
                     }
                 }
-                break;
-            case STR_array:
-                elems = selector;
-                break;
-            default:
-                if (isArrayLike(selector)) {
-                    // 类数组
-                    elems = makeArray(selector);
-                } else if (isFunction(selector)) {
-                    // 属于函数
-                    if (DOCUMENT.readyState === "complete") {
-                        selector($)
-                    } else {
-                        DOCUMENT.addEventListener('DOMContentLoaded', function () {
-                            selector($)
-                        }, false);
-                    }
-                    elems = [DOCUMENT];
-                } else if (selector) {
-                    // 其他类型
-                    elems = [selector];
+
+                // 寄存eventHandle
+                funcData.handle = eventHandle;
+
+                ele.addEventListener(eventName, eventHandle);
+            }
+
+            // 获取事件数组对象
+            let eventArr = getEventTypeData(ele, eventName);
+
+            // 添加入事件数组
+            eventArr.push(funcData);
+        });
+    });
+
+    return eles;
+}
+
+const off = (eles, events, selector, fn) => {
+    if (events) {
+        // 事件字符串拆分
+        events = events.split(' ');
+
+        // 判断 是不是selector
+        if (!fn && isFunction(selector)) {
+            fn = selector;
+            selector = UNDEFINED;
+        }
+    }
+
+    each(eles, ele => {
+        // eventBase
+        let eventBase = getEventData(ele);
+
+        if (!events) {
+            if (isElement(ele)) {
+                for (let eventName in eventBase) {
+                    let eveArr = eventBase[eventName];
+                    each(eveArr, tar => {
+                        ele.removeEventListener(eventName, tar.handle);
+                    });
                 }
+            }
+            // 注销全部事件
+            ele[XQUEEVENTKEY] = {};
+            return;
         }
 
-        return new XQue(elems);
+        each(events, eventName => {
+            let eveArr = getEventTypeData(ele, eventName);
+
+            if (isElement(ele)) {
+                if (fn) {
+                    let tar = eveArr.find(function (e) {
+                        return e.fn === fn && e.selector === selector;
+                    });
+
+                    if (tar) {
+                        // 注销事件并移除函数
+                        ele.removeEventListener(eventName, tar.handle);
+                        removeByArr(eveArr, tar);
+                    }
+                } else {
+                    // 注销所有事件
+                    each(eveArr, tar => {
+                        ele.removeEventListener(eventName, tar.handle);
+                    });
+                    // 清空数组
+                    eventBase[eventName] = [];
+                }
+            } else {
+                if (fn) {
+                    // 移除函数
+                    removeByArr(eveArr, fn);
+                } else {
+                    // 清空数组
+                    eventBase[eventName] = [];
+                }
+            }
+        });
+    });
+
+    return eles;
+}
+
+Object.assign(xQuePrototype, {
+    // 注册事件
+    on(events, selector, data, fn) {
+        // 事件注册
+        return on(this, events, selector, data, fn);
+    },
+    one(events, data, fn) {
+        // 事件注册
+        return on(this, events, UNDEFINED, data, fn, 1);
+    },
+    off(events, selector, fn) {
+        return off(this, events, selector, fn);
+    },
+    trigger(type, data) {
+        return trigger(this, type, data);
+    },
+    triggerHandler(type, data) {
+        return trigger(this, type, data, 1);
     }
+});
+
+    // 使用xhr和promise实现的ajax，和jQuery的ajax不一样，它是返回promise实例，但比fetch api多了pending状态监听
+let ajaxDefaults = {
+    url: "",
+    type: "GET",
+    data: "",
+    crossDomain: FALSE,
+    dataType: "",
+    headers: {},
+    timeout: 100000,
+    username: null,
+    password: null,
+    contentType: "json"
+};
+
+const ajax = (options) => {
+    let defaults = assign({}, ajaxDefaults);
+    assign(defaults, options);
+
+    let {
+        contentType
+    } = defaults;
+
+    let charsetutf8 = '; charset=UTF-8';
+    // 修正contentType
+    // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
+    if (contentType.indexOf('json') > -1) {
+        contentType = "application/json" + charsetutf8;
+    } else if (contentType.indexOf('urlencoded') > -1) {
+        contentType = "application/x-www-form-urlencoded" + charsetutf8;
+    } else if (contentType.indexOf('form') > -1) {
+        contentType = "multipart/form-data" + charsetutf8;
+    } else if (contentType.indexOf('xml') > -1) {
+        contentType = "text/xml" + charsetutf8;
+    }
+
+    // 事件寄存对象
+    let eveObj = $({});
+
+    // 实例
+    var oReq = new XMLHttpRequest();
+    // 要返回回去的promise
+    let reP = new Promise((res, rej) => {
+        // 设置请求
+        oReq.open(defaults.type, defaults.url, TRUE, oReq.username, oReq.password);
+
+        // 设置 header
+        let {
+            headers
+        } = defaults;
+        for (let k in headers) {
+            oReq.setRequestHeader(k, headers[k]);
+        }
+
+        // 设置contentType
+        oReq.setRequestHeader("Content-Type", contentType);
+
+        // 设置返回数据类型
+        oReq.responseType = defaults.dataType;
+
+        // 跨域是否带上cookie
+        oReq.withCredentials = defaults.crossDomain;
+
+        // 超时时间设定
+        oReq.timeout = defaults.timeout;
+
+        // 设置callback
+        oReq.addEventListener('load', e => {
+            let {
+                target
+            } = e;
+
+            let {
+                response
+            } = e.target;
+
+            // 修正返回数据类型
+            let responseContentType = target.getResponseHeader('content-type');
+            if (responseContentType && responseContentType.indexOf("application/json") > -1 && typeof response != "object") {
+                response = JSON.parse(response);
+            }
+            res(response);
+        }, FALSE);
+        oReq.addEventListener('error', e => {
+            rej();
+        }, FALSE);
+        oReq.addEventListener("progress", e => {
+            eveObj.trigger('loading', e);
+        }, FALSE);
+        oReq.upload && oReq.upload.addEventListener("progress", e => {
+            eveObj.trigger('uploading', e);
+        }, FALSE);
+    });
+
+    assign(reP, {
+        // 加载中
+        loading(func) {
+            eveObj.on('loading', (e, data) => func(data));
+            return reP;
+        },
+        // 上传中
+        uploading(func) {
+            eveObj.on('uploading', (e, data) => func(data));
+            return reP;
+        },
+        // 发送前
+        beforeSend(func) {
+            // 直接进去函数
+            func(oReq);
+            return reP;
+        }
+    });
+
+    // 异步发送请求
+    setTimeout(() => {
+        let {
+            data
+        } = defaults;
+
+        if (data) {
+            if (contentType.indexOf('urlencoded') > -1) {
+                data = objectToUrlencode(data);
+            } else if (contentType.indexOf('application/json') > -1) {
+                data = JSON.stringify(data);
+            }
+            oReq.send(data)
+        } else {
+            oReq.send();
+        }
+    }, 0);
+
+    return reP;
+}
+
+const objectToUrlencode = (obj, headerStr = "") => {
+    let str = "";
+    for (let k in obj) {
+        let val = obj[k];
+        if (typeof val === "object") {
+            if (headerStr) {
+                str += objectToUrlencode(val, `${headerStr}[${k}]`);
+            } else {
+                str += objectToUrlencode(val, k);
+            }
+        } else {
+            if (headerStr) {
+                if (obj instanceof Array) {
+                    k = "";
+                }
+                k = headerStr + `[${k}]`;
+            }
+            k = encodeURIComponent(k);
+            val = encodeURIComponent(val);
+            str += `${k}=${val}&`;
+        }
+    }
+
+    if (!headerStr) {
+        // 去掉最后的 &
+        str = str.replace(/&$/g, "");
+    }
+    return str;
+}
+
+const ajaxSetup = (options) => {
+    assign(ajaxDefaults, options);
+}
+
+$.ajax = ajax;
+$.ajaxSetup = ajaxSetup;
 
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;

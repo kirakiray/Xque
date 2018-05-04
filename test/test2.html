@@ -6,15 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>test</title>
-    <script src="../dist/xque.js"></script>
     <!-- <script src="jquery-3.3.1.js"></script> -->
-    
+    <script src="../dist/xque.js"></script>
+    <!-- <script src="zepto.js"></script> -->
+    <!-- <script src="smartjq.js"></script> -->
+
 </head>
 
 <body>
     <div id="a" class="aaa bbb" style="border:4px solid #aaa;padding:5px;margin:10px;">id a</div>
     <br>
     <br>
+    <input type="text" id="a2">
     <br>
     <br>
     <br>
@@ -86,8 +89,7 @@
     <br>
     <br>
     <br>
-    <div class="a">a2
-    </div>
+    <div class="a">a2 </div>
     <br>
     <br>
     <br>
@@ -95,11 +97,101 @@
     <br>
 </body>
 <script>
+    $('#a2').on('blur', (e) => {
+        debugger
+    })
+</script>
+<script>
     // $('div').append('<span style="color:red;">kkk</span>');
 
-    $('#kkspan')[0].aa = 10000;
+    // $('#kkspan')[0].aa = 10000;
 
-    $('div').after($('#kkspan'));
+    // $('div').after($('#kkspan'));
+
+    var aaa = $({});
+
+    aaa.on('haha', function (e) {
+        debugger
+    });
+
+    $('#a').one('click', function (e) {
+        console.log(e);
+        debugger
+        e.stopPropagation();
+        // console.log('stopPropagation', e);
+        // e.stopImmediatePropagation();
+        // console.log('stopImmediatePropagation', e);
+    });
+
+    $('body').on('touchend', function (e) {
+        debugger
+        console.log('body touchend');
+    });
+
+    $('#a').on('touchend', function (e) {
+        debugger
+        console.log('hahahaha2222');
+    });
+
+    $.ajax({
+        type: "POST",
+        url: "http://localhost:8998/api",
+        // dataType: "json",
+        contentType: "urlencoded",
+        data: {
+            a1: "aa*aa&aa a+a-a=a",
+            b1: "bbbbbb",
+            c1: ['111', '222', {
+                ddd: "ddd"
+            }],
+            k1: {
+                c2: ['aaa', 'bbb'],
+                s1: "ssss%%%",
+                d1: "ddd",
+                k2: {
+                    val: "i am k2"
+                }
+            }
+        }
+    }).then(data => {
+        console.log('data => ', data);
+    });
+
+    let test =
+        "a1=aa*aa%26aa+a%2Ba-a%3Da&b1=bbbbbb&c1%5B%5D=111&c1%5B%5D=222&c1%5B2%5D%5Bddd%5D=ddd&k1%5Bc2%5D%5B%5D=aaa&k1%5Bc2%5D%5B%5D=bbb&k1%5Bs1%5D=ssss%25%25%25&k1%5Bd1%5D=ddd&k1%5Bk2%5D%5Bval%5D=i+am+k2";
+
+    const urlencodeToObject = (str) => {
+        let oriObject = {};
+
+        // 就进行转换字符串和创建
+        str = str.replace(/\+/g, "%20");
+        str = str.replace(/%2B/g, "+")
+
+        str.split('&').forEach(v => {
+            // =分组
+            let [key, val] = v.split('=');
+
+            // 转换val
+            val = decodeURIComponent(val);
+            key = decodeURIComponent(key);
+
+            if (key.indexOf('[]') > -1) {
+                // 数组
+                key = key.replace('[]', "");
+                let tarArr = oriObject[key] || (oriObject[key] = []);
+                tarArr.push(val);
+            } else if (key.indexOf('[') > -1) {
+                let keyArr = key.match(/\[.+?\]/g);
+                // 对象
+            } else {
+                oriObject[key] = val;
+            }
+        });
+
+        return oriObject;
+    }
+
+    let aa = urlencodeToObject(test);
 </script>
 
 </html>

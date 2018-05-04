@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width">
-    <title>smartJQ test</title>
+    <title>xQue test</title>
     <link rel="stylesheet" href="qunit-1.15.0.css" />
     <style>
         .test_group {
@@ -12,12 +12,12 @@
         }
     </style>
     <script src="qunit-1.15.0.js"></script>
-    <script src="../dist/xque.js"></script>
     <!-- <script src="jquery-3.3.1.js"></script> -->
+    <script src="../dist/xque.js"></script>
 </head>
 
 <body>
-    <h1 id="qunit-header">smartJQ test</h1>
+    <h1 id="qunit-header">Xque test</h1>
     <h2 id="qunit-banner"></h2>
     <ol id="qunit-tests"></ol>
 
@@ -106,6 +106,32 @@
         </script>
     </div>
 
+    <div class="test_group">
+        <div id="tar2point1">
+            <div class="tar2point1_ele" id="tar2point1_ele_1" data-haha="111"></div>
+        </div>
+        <script>
+            QUnit.test("data removeData", function (assert) {
+                // 获取属性
+                assert.ok($('#tar2point1_ele_1').data('haha') == '111', 'get data ok');
+
+                $('#tar2point1_ele_1').data('haha2', 'haha2hahaha')
+                assert.ok($('#tar2point1_ele_1').data('haha2') == 'haha2hahaha', 'set data ok');
+
+                $('#tar2point1_ele_1').data({
+                    'haha3': 'iamhaha3'
+                })
+                assert.ok($('#tar2point1_ele_1').data('haha3') == 'iamhaha3', 'set data ok2');
+
+                $('#tar2point1_ele_1').data('haha', 'changehaha')
+                assert.ok($('#tar2point1_ele_1').data('haha') == 'changehaha', 'set data ok3');
+
+                $('#tar2point1_ele_1').removeData('haha');
+                assert.ok($('#tar2point1_ele_1').data('haha') == '111', 'remove data ok');
+            });
+        </script>
+    </div>
+
     <div class="test_group" style="display:none;">
         <div id="tar3">
             <div class="tar3_ele" id="tar3_ele_1">I am text</div>
@@ -187,7 +213,7 @@
             <div class="tar6_ele" id="tar6_ele_2">I am text</div>
         </div>
         <script>
-            QUnit.test("wrap wrapAll unwrap", function (assert) {
+            QUnit.test("wrap wrapAll unwrap wrapInner", function (assert) {
                 // 获取属性
                 $('.tar6_ele').wrap(function (i) {
                     return '<div class="wrap_container_' + i + '"></div>';
@@ -205,6 +231,9 @@
                 $('.tar6_ele').unwrap();
                 assert.ok($('.wrap_container_0')[0].children.length == 2, 'unwrap ok');
 
+                $('.wrap_container_0').wrapInner('<div></div>');
+                assert.ok($('.wrap_container_0')[0].children.length == 1, 'wrapInner ok');
+
             });
         </script>
     </div>
@@ -216,7 +245,7 @@
             <div class="tar7_ele">I am text</div>
         </div>
         <script>
-            QUnit.test("filter is not", function (assert) {
+            QUnit.test("filter & is & not", function (assert) {
                 assert.ok($('.tar7_ele').filter('[test]').length == 1, "filter ok 1");
                 assert.ok($('.tar7_ele').filter(document.querySelector('.tar7_ele[test]')).length == 1,
                     "filter ok 2");
@@ -233,6 +262,336 @@
         </script>
     </div>
 
+
+    <div class="test_group" style="display:none;">
+        <div id="tar8">
+            <div class="tar8_ele" id="tar8_ele_1">I am text</div>
+            <div class="tar8_ele" id="tar8_ele_2">I am text</div>
+            <div class="tar8_ele" id="tar8_ele_3">I am text</div>
+        </div>
+        <script>
+            QUnit.test("siblings remove replaceWith empty", function (assert) {
+                assert.ok($('.tar8_ele').length == 3, 'count ok');
+
+                // 获取属性
+                assert.ok($('#tar8_ele_2').siblings().length == 2, 'siblings ok 1');
+                assert.ok($('#tar8_ele_2').siblings('#tar8_ele_1').length == 1, 'siblings ok 2');
+
+                $('#tar8_ele_2').remove();
+                assert.ok($('.tar8_ele').length == 2, 'remove ok 1');
+
+                $('#tar8_ele_3').replaceWith('<div></div>');
+                assert.ok($('.tar8_ele').length == 1 && $('#tar8').children().length == 2, 'replaceWith ok 1');
+
+                $('#tar8').empty();
+                assert.ok($('.tar8_ele').length == 0, 'empty ok 1');
+            });
+        </script>
+    </div>
+
+
+    <div class="test_group" style="display:none;">
+        <div id="tar9">
+            <div class="tar9_ele" id="tar9_ele_1">I am text 1</div>
+            <div class="tar9_ele test" id="tar9_ele_2">I am text 2
+                <span class="test_sub"></span>
+            </div>
+            <div class="tar9_ele" id="tar9_ele_3">I am text 3</div>
+            <div class="tar9_ele test" id="tar9_ele_4">I am text 4
+                <span class="test_sub"></span>
+            </div>
+            <div class="tar9_ele" id="tar9_ele_5">I am text 5</div>
+        </div>
+        <script>
+            QUnit.test("eq(slice) first last get hasClass has filter not children next prev parent", function (assert) {
+                // 获取属性
+                assert.ok($('.tar9_ele').eq(0).get(0) === $('#tar9_ele_1')[0], 'eq ok 1');
+                assert.ok($('.tar9_ele').eq(-1).get(0) === $('#tar9_ele_5')[0], 'eq ok 2');
+                assert.ok($('.tar9_ele').first().get(0) === $('#tar9_ele_1')[0], 'first ok');
+                assert.ok($('.tar9_ele').last().get(0) === $('#tar9_ele_5')[0], 'last ok');
+                assert.ok($('.tar9_ele').hasClass('test'), 'hasClass ok');
+                assert.ok($('.tar9_ele').has('.test_sub').length == 2, 'has ok');
+                assert.ok($('.tar9_ele').filter('.test').length == 2, 'filter ok');
+                assert.ok($('.tar9_ele').not('.test').length == 3, 'not ok');
+                assert.ok($('#tar9').children().length == 5, 'children ok 1');
+                assert.ok($('#tar9').children('.test').length == 2, 'children ok 2');
+                assert.ok($('#tar9_ele_1').next()[0] === $('#tar9_ele_2')[0], 'next ok 1');
+                assert.ok($('#tar9_ele_1').next('.tar9_ele')[0] === $('#tar9_ele_2')[0], 'next ok 2');
+                assert.ok($('#tar9_ele_4').prev()[0] === $('#tar9_ele_3')[0], 'prev ok');
+                assert.ok($('.tar9_ele .test_sub').eq(0).parent()[0] == $('#tar9_ele_2').get(0), 'parent ok');
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar10">
+            <div class="tar10_ele" id="tar10_ele_1">I am text 1</div>
+            <div class="tar10_ele test" id="tar10_ele_2">I am text 2
+                <span class="test_sub"></span>
+            </div>
+            <div class="tar10_ele" id="tar10_ele_3">I am text 3</div>
+            <div class="tar10_ele test" id="tar10_ele_4">I am text 4
+                <span class="test_sub"></span>
+            </div>
+            <div class="tar10_ele" id="tar10_ele_5">I am text 5</div>
+        </div>
+        <script>
+            QUnit.test("nextAll prevAll parents nextUntil prevUntil parentsUntil", function (assert) {
+                assert.ok($('#tar10_ele_2').nextAll().length == 3, 'nextAll ok 1');
+                assert.ok($('#tar10_ele_2').nextAll('.test').length == 1, 'nextAll ok 2');
+                assert.ok($('#tar10_ele_4').prevAll().length == 3, 'prevAll ok');
+                assert.ok($('#tar10_ele_4 .test_sub').parents().length === 5, "parents ok 1");
+                assert.ok($('#tar10_ele_4 .test_sub').parents('.test_group').length === 1, "parents ok 2");
+                assert.ok($('#tar10_ele_2').nextUntil('#tar10_ele_5').length == 2, 'nextUntil ok');
+                assert.ok($('#tar10_ele_5').prevUntil('#tar10_ele_1').length == 3, 'prevUntil ok');
+                assert.ok($('#tar10_ele_5').parentsUntil('body').length == 2, 'parentsUntil ok');
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar11">
+            <div class="tar11_ele" id="tar11_ele_1">tar11_ele_1</div>
+        </div>
+        <div id="tar11_2">
+            <div class="tar11_ele" id="tar11_ele_2">tar11_ele_2</div>
+        </div>
+        <script>
+            QUnit.test("normal Event", function (assert) {
+                // 获取属性
+                $('#tar11').on('haha', function (e) {
+                    assert.ok(!e.data, 'data ok4');
+                    assert.ok(1, 'Bubble ok');
+                });
+                $('#tar11_ele_1').on('haha', {
+                    val: "event function data"
+                }, function (e, data1, data2) {
+                    assert.ok(data1.val === "data 1", 'data ok1');
+                    assert.ok(!data2, 'data ok2');
+                    assert.ok(e.data.val === "event function data", 'data ok3');
+                    assert.ok(this === $('#tar11_ele_1')[0], 'element ok');
+                });
+
+                // 触发
+                $('#tar11_ele_1').trigger('haha', {
+                    val: "data 1"
+                });
+
+                // 获取属性
+                $('#tar11_2').on('haha2', function (e) {
+                    throw 'error';
+                });
+
+                $('#tar11_ele_2').on('haha2', function (e, data1, data2) {
+                    assert.ok(data1.val === "data 1", 'data ok5');
+                    assert.ok(data2.val === "data 2", 'data ok6');
+                    assert.ok(!e.isPropagationStopped(), 'isPropagationStopped ok1');
+                    e.stopPropagation();
+                    assert.ok(e.isPropagationStopped(), 'isPropagationStopped ok2');
+                });
+
+                // 触发
+                $('#tar11_ele_2').trigger('haha2', [{
+                    val: "data 1"
+                }, {
+                    val: "data 2"
+                }]);
+            });
+        </script>
+    </div>
+    <div class="test_group" style="display:none;">
+        <div id="tar12">
+            <div class="tar12_ele" id="tar12_ele_1">tar12_ele_1</div>
+        </div>
+        <a id="tar12_2" href="http://github.com/">
+            <span id="tar12_2_ele1">tar12_ele_2</span>
+        </a>
+        <script>
+            QUnit.test("Event isPropagationStopped preventDefault stopImmediatePropagation triggerHandler", function (
+                assert) {
+                // 7次
+                assert.expect(7);
+
+                // 获取属性
+                $('#tar12_ele_1').on('haha', function (e) {
+                    assert.ok(!e.isPropagationStopped(), 'isPropagationStopped ok1');
+                    assert.ok(!e.isImmediatePropagationStopped(), 'isImmediatePropagationStopped ok1');
+                    e.stopImmediatePropagation();
+                    assert.ok(e.isPropagationStopped(), 'isPropagationStopped ok2');
+                    assert.ok(e.isImmediatePropagationStopped(), 'isImmediatePropagationStopped ok2');
+                });
+                $('#tar12_ele_1').on('haha', function (e) {
+                    throw "error";
+                });
+                $('#tar12').on('haha', function (e) {
+                    throw "error";
+                });
+
+                // 触发
+                $('#tar12_ele_1').trigger('haha');
+
+                $('#tar12_2').on('click', function (e) {
+                    assert.ok(!e.isDefaultPrevented(), 'isDefaultPrevented ok1');
+                    e.preventDefault();
+                    assert.ok(e.isDefaultPrevented(), 'isDefaultPrevented ok2');
+                })
+
+                // 触发点击事件
+                $('#tar12_2').trigger('click');
+
+                $('#tar12_2_ele1').one('click', function (e) {
+                    assert.ok(1, 'triggerHandler ok');
+                });
+                $('#tar12_2_ele1').triggerHandler('click');
+                $('#tar12_2_ele1').triggerHandler('click');
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <div id="tar13">
+            <div class="tar13_ele">tar13_ele
+                <span class="tar13_ele_sub" id="tar13_ele_sub1"></span>
+            </div>
+        </div>
+        <script>
+            QUnit.test("Event selector & off", function (assert) {
+                assert.expect(9);
+
+                var aCount = 1,
+                    bCount = 1,
+                    cCount = 1;
+
+                var a = function (e) {
+                    assert.ok(1, 'event ok a' + aCount++);
+                }
+                var b = function (e) {
+                    assert.ok(1, 'event ok b' + bCount++);
+                }
+                var c = function (e) {
+                    assert.ok(1, 'event ok c' + cCount++);
+                }
+                $('#tar13').on('haha', a);
+                $('#tar13').on('haha', b);
+                $('#tar13').on('haha', c);
+
+                // 注册haha2事件
+                $('#tar13').on('haha2', function () {
+                    assert.ok(1, 'haha2 ok');
+                });
+
+                // 获取属性
+                var selectFunction = function (e) {
+                    assert.ok(this === $('.tar13_ele')[0], 'selector ok');
+                }
+                $('#tar13').on('haha', '.tar13_ele', selectFunction);
+
+                $('#tar13_ele_sub1').trigger('haha');
+
+                // 取消一个事件
+                $('#tar13').off('haha', a);
+                // 没有选择器的取消事件是无效的
+                $('#tar13').off('haha', selectFunction);
+
+                $('#tar13').trigger('haha');
+
+                // 注销select的函数
+                $('#tar13').off('haha', '.tar13_ele', selectFunction);
+                $('#tar13').trigger('haha');
+
+                // 注销所有haha函数
+                $('#tar13').off('haha');
+                // 这时候触发都没效了
+                $('#tar13').trigger('haha');
+
+                // 触发haha2
+                $('#tar13').trigger('haha2');
+                // 清空所有事件
+                $('#tar13').off();
+                $('#tar13').trigger('haha2');
+            });
+        </script>
+    </div>
+
+    <div class="test_group" style="display:none;">
+        <script>
+            QUnit.test("Event custom object", function (assert) {
+                assert.expect(6);
+
+                var obj = $({});
+
+                obj.on('haha', {
+                    val: "custom data"
+                }, function (e, data) {
+                    assert.ok(data.val == "I am custom data", 'data ok1');
+                    assert.ok(e.data.val == "custom data", 'data ok2');
+                    assert.ok(1, 'trigger ok');
+                    assert.ok(e.isImmediatePropagationStopped() === false,
+                        'isImmediatePropagationStopped ok1');
+                    e.stopImmediatePropagation();
+                    assert.ok(e.isImmediatePropagationStopped() === true,
+                        'isImmediatePropagationStopped ok2');
+                });
+
+                obj.on('haha', function () {
+                    throw 'error';
+                });
+
+                obj.trigger('haha', {
+                    val: "I am custom data"
+                });
+
+                obj.off('haha');
+                obj.trigger('haha');
+
+
+                var obj2 = $({});
+
+                obj2.one('haha', function (e, data) {
+                    assert.ok(1, 'one Event');
+                });
+
+                obj2.trigger('haha');
+                obj2.trigger('haha');
+            });
+        </script>
+    </div>
+
+
+    <div class="test_group" style="display:none;">
+        <div id="tar14">
+            <div class="tar14_ele">
+                <span class="test_sub">I am text 1</span>
+            </div>
+        </div>
+        <script>
+            QUnit.test("clone", function (assert) {
+                assert.expect(5);
+
+                // 设置自定义数据
+                $('.tar14_ele').data('haha', "Iamhaha");
+                var kaka_id = 1;
+                $('.tar14_ele').on('kaka', function () {
+                    assert.ok(1, 'kaka ' + kaka_id++);
+                });
+
+                var tar14ele_c1 = $('.tar14_ele').clone();
+                assert.ok(!tar14ele_c1.data('haha'), "no data is ok");
+                assert.ok(0 in tar14ele_c1.children(), "has children ok");
+                tar14ele_c1.trigger('kaka');
+
+
+                var tar14ele_c2 = $('.tar14_ele').clone(true);
+                assert.ok(tar14ele_c2.data('haha') === 'Iamhaha', "data is ok");
+                tar14ele_c2.trigger('kaka');
+
+                // 设置子数据
+                $('.tar14_ele .test_sub').data('subdata', "iamsubdata");
+                var tar14ele_c3 = $('.tar14_ele').clone(true, true);
+                assert.ok(tar14ele_c3.find('.test_sub').data('subdata') === 'iamsubdata', "subdata is ok");
+            });
+        </script>
+    </div>
 
 </body>
 
