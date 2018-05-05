@@ -9,6 +9,7 @@ server.rootdir = __dirname.replace(/\/scripts$/, "");
 server.tap('/api', (request, rInfo) => new Promise((res, rej) => {
     switch (request.method) {
         case "POST":
+        case "GET":
             // let data = "";
 
             // request.on('data', (chunk) => {

@@ -47,6 +47,7 @@ var PieServer = function () {
 
     //MIMEMap类型返回
     let mimeMap = this.mimeMap = {
+        ".mp4": "video/mp4",
         ".bmp": "image/bmp",
         ".png": "image/png",
         ".gif": "image/gif",
@@ -97,40 +98,44 @@ var PieServer = function () {
 
         let tarFunc = tapDatabase[pathname];
         if (tarFunc) {
-            let contentType = request.headers['content-type'];
+            let contentType = headers['content-type'];
             let requestInfo = {
                 urlData,
                 responeHeaders
             };
 
-            // 判断是哪种编码
-            let isUrlencoded = contentType.indexOf('x-www-form-urlencoded') > -1;
-            let isJsonencode = contentType.indexOf('application/json') > -1;
-            let isFormData = contentType.indexOf('multipart/form-data') > -1;
-            let isTextXml = contentType.indexOf('text/xml') > -1;
+            if (request.method === "POST") {
+                // 判断是哪种编码
+                let isUrlencoded = contentType.indexOf('x-www-form-urlencoded') > -1;
+                let isJsonencode = contentType.indexOf('application/json') > -1;
+                let isFormData = contentType.indexOf('multipart/form-data') > -1;
+                let isTextXml = contentType.indexOf('text/xml') > -1;
 
-            // 判断请求类型
-            if (isUrlencoded || isJsonencode) {
-                // 获取响应回来的数据
-                let responeData = await new Promise(res => {
-                    let data = "";
-                    request.on('data', (chunk) => {
-                        data += chunk;
+                // 判断请求类型
+                if (isUrlencoded || isJsonencode) {
+                    // 获取响应回来的数据
+                    let responeData = await new Promise(res => {
+                        let data = "";
+                        request.on('data', (chunk) => {
+                            data += chunk;
+                        });
+                        request.on('end', (chunk) => {
+                            res(data);
+                        });
                     });
-                    request.on('end', (chunk) => {
-                        res(data);
-                    });
-                });
 
-                // 根据类型进行转换
-                if (isJsonencode) {
-                    responeData = JSON.parse(responeData);
-                } else if (isUrlencoded) {
-                    responeData = qs.parse(responeData);
+                    // 根据类型进行转换
+                    if (isJsonencode) {
+                        responeData = JSON.parse(responeData);
+                    } else if (isUrlencoded) {
+                        responeData = qs.parse(responeData);
+                    }
+
+
+                    requestInfo.data = responeData;
                 }
-
-
-                requestInfo.data = responeData;
+            } else if (request.method === "GET") {
+                urlData.query && (requestInfo.data = qs.parse(urlData.query));
             }
 
             let responseText = await tarFunc(request, requestInfo);
@@ -179,20 +184,75 @@ var PieServer = function () {
             responeHeaders['Content-Type'] = mime;
 
             //图片的话断流返回数据
-            let imgstat;
+            let fileStat;
 
             try {
-                imgstat = await stat(pathname);
+                fileStat = await stat(pathname);
             } catch (e) {}
 
             //存在图片才返回
-            if (imgstat) {
-                //设置文件大小
-                responeHeaders['Content-Length'] = imgstat.size;
+            if (fileStat) {
+                let {
+                    range
+                } = headers;
 
-                //写入头数据
-                respone.writeHead(200, responeHeaders);
-                fs.createReadStream(pathname).pipe(respone);
+                // 文件大小
+                let filesize = fileStat.size;
+
+                // 返回数据长度
+                let responseContentLength = filesize;
+
+                // 文件流的范围
+                let start = 0;
+                let end = filesize - 1;
+
+                // 状态码
+                let headStat = 200;
+
+                // 是视频文件就添加 Content-Range
+                // 根据所需长度返回内容
+                if (range) {
+                    let rangeArr = range.match(/bytes=(.+?)-/);
+                    if (1 in rangeArr) {
+                        // 修正start
+                        start = parseInt(rangeArr[1]);
+                        if (start < 0) {
+                            start = 0;
+                        }
+                        if (start > filesize) {
+                            start = filesize - 2;
+                        }
+
+                        // 修正end
+                        end = start + 5242880;
+                        if (end >= filesize) {
+                            end = filesize - 1;
+                        }
+
+                        // 修正返回长度
+                        responseContentLength = end - start + 1;
+
+                        // 修正状态码
+                        headStat = 206;
+                    }
+
+                    Object.assign(responeHeaders, {
+                        'Accept-Ranges': 'bytes',
+                        'Content-Range': `bytes ${start}-${end}/${filesize}`
+                    });
+                }
+
+                // 设置返回长度
+                responeHeaders['Content-Length'] = responseContentLength;
+
+                // 写入头数据
+                respone.writeHead(headStat, responeHeaders);
+
+                // 返回文件流
+                fs.createReadStream(pathname, {
+                    start,
+                    end
+                }).pipe(respone);
             } else {
                 //不存在就返回错误
                 respone.writeHead(404);

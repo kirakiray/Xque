@@ -216,6 +216,8 @@ const on = (eles, events, selector, data, fn, isOne) => {
                         let currentTarget = $(e.target).parents(selector);
                         if (0 in currentTarget) {
                             tar = currentTarget[0];
+                        } else if (meetsEle(e.target, selector)) {
+                            tar = e.target;
                         } else {
                             canRun = 0;
                         }
@@ -342,5 +344,22 @@ Object.assign(xQuePrototype, {
     },
     triggerHandler(type, data) {
         return trigger(this, type, data, 1);
+    },
+    bind(types, data, fn) {
+        return this.on(types, data, fn);
+    },
+    unbind(types, fn) {
+        return this.off(types, fn);
+    },
+    hover(fnOver, fnOut) {
+        return this.on('mouseenter', fnOver).on('mouseleave', fnOut || fnOver);
+    }
+});
+
+// 一众事件
+each("blur focus focusin focusout resize scroll click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup contextmenu".split(" "), function (eventName) {
+    xQuePrototype[eventName] = function (callback) {
+        callback ? this.on(eventName, callback) : this.trigger(eventName);
+        return this;
     }
 });

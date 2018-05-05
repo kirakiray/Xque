@@ -336,7 +336,7 @@
             <div class="tar10_ele" id="tar10_ele_5">I am text 5</div>
         </div>
         <script>
-            QUnit.test("nextAll prevAll parents nextUntil prevUntil parentsUntil", function (assert) {
+            QUnit.test("nextAll prevAll parents nextUntil prevUntil parentsUntil closest", function (assert) {
                 assert.ok($('#tar10_ele_2').nextAll().length == 3, 'nextAll ok 1');
                 assert.ok($('#tar10_ele_2').nextAll('.test').length == 1, 'nextAll ok 2');
                 assert.ok($('#tar10_ele_4').prevAll().length == 3, 'prevAll ok');
@@ -345,6 +345,8 @@
                 assert.ok($('#tar10_ele_2').nextUntil('#tar10_ele_5').length == 2, 'nextUntil ok');
                 assert.ok($('#tar10_ele_5').prevUntil('#tar10_ele_1').length == 3, 'prevUntil ok');
                 assert.ok($('#tar10_ele_5').parentsUntil('body').length == 2, 'parentsUntil ok');
+                assert.ok($('#tar10_ele_5').closest('.test_group').length == 1 && ($('#tar10_ele_5').closest(
+                    '.test_group')[0] === $('#tar10').parent()[0]), 'closest ok');
             });
         </script>
     </div>
@@ -593,6 +595,34 @@
         </script>
     </div>
 
+
+    <div class="test_group">
+        <div id="tar15">
+            <ul>
+                <div class="tar15_foo"></div>
+                <div class="tar15_bar"></div>
+                <div class="tar15_baz"></div>
+            </ul>
+            <ul>
+                <div class="tar15_baz"></div>
+                <div class="tar15_foo" id="tar15_foo_2"></div>
+                <div class="tar15_bar"></div>
+            </ul>
+        </div>
+        <script>
+            QUnit.test("index", function (assert) {
+                assert.ok($('.tar15_baz').index() == 2, 'get index ok');
+
+                assert.ok($('#tar15 div').index($('.tar15_foo')[1]) == 4, 'element index ok');
+
+                assert.ok($('#tar15 div').index($('#tar15_foo_2')) == 4, "$element index ok");
+
+                assert.ok($('#tar15 div').index($('.tar15_bar')) == 1, "$element index ok 2");
+
+                assert.ok($('#tar15_foo_2').index('#tar15 div') == 4, "index string ok");
+            });
+        </script>
+    </div>
 </body>
 
 </html>

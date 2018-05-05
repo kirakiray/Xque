@@ -73,7 +73,7 @@ const nuExpr = (tars, key, filter, lastExpr) => {
     return $(arr);
 };
 
-Object.assign(xQuePrototype, {
+assign(xQuePrototype, {
     slice(...args) {
         let newArr = [].slice.call(this, ...args);
         return $(newArr);
@@ -153,28 +153,39 @@ Object.assign(xQuePrototype, {
     parent(expr) {
         return propKey(expr, "parentNode", this);
     },
-    nextAll: function (filter) {
+    nextAll(filter) {
         return nuExpr(this, 'nextElementSibling', filter);
     },
-    prevAll: function (filter) {
+    prevAll(filter) {
         return nuExpr(this, 'previousElementSibling', filter);
     },
-    parents: function (filter) {
+    parents(filter) {
         return nuExpr(this, 'parentNode', filter, DOCUMENT);
     },
-    nextUntil: function (lastExpr, filter) {
+    nextUntil(lastExpr, filter) {
         return nuExpr(this, 'nextElementSibling', filter, lastExpr);
     },
-    prevUntil: function (lastExpr, filter) {
+    prevUntil(lastExpr, filter) {
         return nuExpr(this, 'previousElementSibling', filter, lastExpr);
     },
-    parentsUntil: function (lastExpr, filter) {
+    parentsUntil(lastExpr, filter) {
         return nuExpr(this, 'parentNode', filter, lastExpr);
+    },
+    closest(selector) {
+        var parentEles = $(selector).parent();
+        return this.parentsUntil(parentEles, selector);
     },
     siblings(expr) {
         let _this = this;
         return this.parent().children(expr).filter(function () {
             if (_this.indexOf(this) === -1) return true;
         });
+    },
+    offsetParent() {
+        let arr = [];
+        each(this, e => {
+            arr.push(e.offsetParent || DOCUMENT.body);
+        });
+        return $(arr);
     }
 });

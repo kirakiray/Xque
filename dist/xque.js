@@ -161,7 +161,7 @@
         if (ele === expr) {
             return !0;
         }
-        var fadeParent = DOCUMENT.createElement('div');
+        let fadeParent = DOCUMENT.createElement('div');
         if (ele === DOCUMENT) {
             return false;
         }
@@ -183,7 +183,7 @@
     }
 
     // 从属数组类型
-    var xQuePrototype = Object.create(Array.prototype);
+    let xQuePrototype = Object.create(Array.prototype);
 
     // 合并方法
     assign(xQuePrototype, {
@@ -275,6 +275,26 @@
                 callback(i, e);
             });
             return this;
+        },
+        index(ele) {
+            let owner, tar;
+            if (!ele) {
+                tar = this[0];
+                owner = makeArray(tar.parentNode.children);
+            } else if (ele.nodeType) {
+                tar = ele;
+                owner = this;
+            } else if (ele instanceof $) {
+                tar = ele[0];
+                owner = this;
+            } else if (getType(ele) === STR_string) {
+                tar = this[0];
+                owner = $(ele);
+            }
+            return owner.indexOf(tar);
+        },
+        extend(obj) {
+            assign(xQuePrototype, obj);
         }
     });
 
@@ -725,7 +745,7 @@ const nuExpr = (tars, key, filter, lastExpr) => {
     return $(arr);
 };
 
-Object.assign(xQuePrototype, {
+assign(xQuePrototype, {
     slice(...args) {
         let newArr = [].slice.call(this, ...args);
         return $(newArr);
@@ -805,29 +825,40 @@ Object.assign(xQuePrototype, {
     parent(expr) {
         return propKey(expr, "parentNode", this);
     },
-    nextAll: function (filter) {
+    nextAll(filter) {
         return nuExpr(this, 'nextElementSibling', filter);
     },
-    prevAll: function (filter) {
+    prevAll(filter) {
         return nuExpr(this, 'previousElementSibling', filter);
     },
-    parents: function (filter) {
+    parents(filter) {
         return nuExpr(this, 'parentNode', filter, DOCUMENT);
     },
-    nextUntil: function (lastExpr, filter) {
+    nextUntil(lastExpr, filter) {
         return nuExpr(this, 'nextElementSibling', filter, lastExpr);
     },
-    prevUntil: function (lastExpr, filter) {
+    prevUntil(lastExpr, filter) {
         return nuExpr(this, 'previousElementSibling', filter, lastExpr);
     },
-    parentsUntil: function (lastExpr, filter) {
+    parentsUntil(lastExpr, filter) {
         return nuExpr(this, 'parentNode', filter, lastExpr);
+    },
+    closest(selector) {
+        var parentEles = $(selector).parent();
+        return this.parentsUntil(parentEles, selector);
     },
     siblings(expr) {
         let _this = this;
         return this.parent().children(expr).filter(function () {
             if (_this.indexOf(this) === -1) return true;
         });
+    },
+    offsetParent() {
+        let arr = [];
+        each(this, e => {
+            arr.push(e.offsetParent || DOCUMENT.body);
+        });
+        return $(arr);
     }
 });
 
@@ -1049,6 +1080,8 @@ const on = (eles, events, selector, data, fn, isOne) => {
                         let currentTarget = $(e.target).parents(selector);
                         if (0 in currentTarget) {
                             tar = currentTarget[0];
+                        } else if (meetsEle(e.target, selector)) {
+                            tar = e.target;
                         } else {
                             canRun = 0;
                         }
@@ -1175,6 +1208,23 @@ Object.assign(xQuePrototype, {
     },
     triggerHandler(type, data) {
         return trigger(this, type, data, 1);
+    },
+    bind(types, data, fn) {
+        return this.on(types, data, fn);
+    },
+    unbind(types, fn) {
+        return this.off(types, fn);
+    },
+    hover(fnOver, fnOut) {
+        return this.on('mouseenter', fnOver).on('mouseleave', fnOut || fnOver);
+    }
+});
+
+// 一众事件
+each("blur focus focusin focusout resize scroll click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup contextmenu".split(" "), function (eventName) {
+    xQuePrototype[eventName] = function (callback) {
+        callback ? this.on(eventName, callback) : this.trigger(eventName);
+        return this;
     }
 });
 
@@ -1196,21 +1246,49 @@ const ajax = (options) => {
     let defaults = assign({}, ajaxDefaults);
     assign(defaults, options);
 
+    // 转大写
+    defaults.type = defaults.type.toUpperCase();
+
     let {
-        contentType
+        url,
+        contentType,
+        data
     } = defaults;
 
-    let charsetutf8 = '; charset=UTF-8';
-    // 修正contentType
-    // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
-    if (contentType.indexOf('json') > -1) {
-        contentType = "application/json" + charsetutf8;
-    } else if (contentType.indexOf('urlencoded') > -1) {
-        contentType = "application/x-www-form-urlencoded" + charsetutf8;
-    } else if (contentType.indexOf('form') > -1) {
+    switch (defaults.type) {
+        case "GET":
+            // get是没有的
+            contentType = "";
+            // 转换数据
+            let dataUrlencode = objectToUrlencode(data);
+            url += (url.indexOf("?") > -1 ? url += "&" : "?") + dataUrlencode;
+            break;
+        case "POST":
+            let charsetutf8 = '; charset=UTF-8';
+            // 修正contentType
+            // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
+            if (contentType.indexOf('json') > -1) {
+                contentType = "application/json" + charsetutf8;
+            } else if (contentType.indexOf('urlencoded') > -1) {
+                contentType = "application/x-www-form-urlencoded" + charsetutf8;
+            } else if (contentType.indexOf('form') > -1) {
+                contentType = "multipart/form-data" + charsetutf8;
+            } else if (contentType.indexOf('xml') > -1) {
+                contentType = "text/xml" + charsetutf8;
+            }
+            break;
+    }
+
+    // 修正数据类型
+    if (data instanceof FormData) {
         contentType = "multipart/form-data" + charsetutf8;
-    } else if (contentType.indexOf('xml') > -1) {
-        contentType = "text/xml" + charsetutf8;
+    } else if (contentType.indexOf('form') > -1) {
+        // 转换 object to Formdata
+        let fdata = new FormData();
+        for (let name in data) {
+            fdata.append(name, data[name]);
+        }
+        data = fdata;
     }
 
     // 事件寄存对象
@@ -1221,7 +1299,7 @@ const ajax = (options) => {
     // 要返回回去的promise
     let reP = new Promise((res, rej) => {
         // 设置请求
-        oReq.open(defaults.type, defaults.url, TRUE, oReq.username, oReq.password);
+        oReq.open(defaults.type, url, TRUE, defaults.username, defaults.password);
 
         // 设置 header
         let {
@@ -1232,7 +1310,7 @@ const ajax = (options) => {
         }
 
         // 设置contentType
-        oReq.setRequestHeader("Content-Type", contentType);
+        contentType && oReq.setRequestHeader("Content-Type", contentType);
 
         // 设置返回数据类型
         oReq.responseType = defaults.dataType;
@@ -1292,10 +1370,6 @@ const ajax = (options) => {
 
     // 异步发送请求
     setTimeout(() => {
-        let {
-            data
-        } = defaults;
-
         if (data) {
             if (contentType.indexOf('urlencoded') > -1) {
                 data = objectToUrlencode(data);
@@ -1308,9 +1382,13 @@ const ajax = (options) => {
         }
     }, 0);
 
+    // 返回参数
+    reP.options = defaults;
+
     return reP;
 }
 
+// 转换成urlencode
 const objectToUrlencode = (obj, headerStr = "") => {
     let str = "";
     for (let k in obj) {
@@ -1345,11 +1423,51 @@ const ajaxSetup = (options) => {
     assign(ajaxDefaults, options);
 }
 
-$.ajax = ajax;
-$.ajaxSetup = ajaxSetup;
+assign($, {
+    ajax,
+    ajaxSetup
+});
+
+each(['get', 'post'], name => {
+    $[name] = (url, data, dataType) => {
+        let options = {
+            url,
+            type: name.toUpperCase(),
+            data
+        }
+        dataType && (options.dataType = dataType);
+        return ajax(options);
+    }
+});
+
+    assign(xQuePrototype, {
+    show() {
+        each(this, ele => {
+            ele.style.display = "";
+        });
+        return this;
+    },
+    hide() {
+        each(this, ele => {
+            ele.style.display = "none";
+        });
+        return this;
+    }
+});
 
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;
+
+    $.extend = (...args) => {
+        if (args.length === 1) {
+            let obj = args[0];
+            if (getType(obj) == "object") {
+                assign($, obj);
+            }
+        } else {
+            assign(...args);
+        }
+    };
 
     // 暴露到外部
     glo.$ = $;

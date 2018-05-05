@@ -16,21 +16,49 @@ const ajax = (options) => {
     let defaults = assign({}, ajaxDefaults);
     assign(defaults, options);
 
+    // 转大写
+    defaults.type = defaults.type.toUpperCase();
+
     let {
-        contentType
+        url,
+        contentType,
+        data
     } = defaults;
 
-    let charsetutf8 = '; charset=UTF-8';
-    // 修正contentType
-    // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
-    if (contentType.indexOf('json') > -1) {
-        contentType = "application/json" + charsetutf8;
-    } else if (contentType.indexOf('urlencoded') > -1) {
-        contentType = "application/x-www-form-urlencoded" + charsetutf8;
-    } else if (contentType.indexOf('form') > -1) {
+    switch (defaults.type) {
+        case "GET":
+            // get是没有的
+            contentType = "";
+            // 转换数据
+            let dataUrlencode = objectToUrlencode(data);
+            url += (url.indexOf("?") > -1 ? url += "&" : "?") + dataUrlencode;
+            break;
+        case "POST":
+            let charsetutf8 = '; charset=UTF-8';
+            // 修正contentType
+            // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
+            if (contentType.indexOf('json') > -1) {
+                contentType = "application/json" + charsetutf8;
+            } else if (contentType.indexOf('urlencoded') > -1) {
+                contentType = "application/x-www-form-urlencoded" + charsetutf8;
+            } else if (contentType.indexOf('form') > -1) {
+                contentType = "multipart/form-data" + charsetutf8;
+            } else if (contentType.indexOf('xml') > -1) {
+                contentType = "text/xml" + charsetutf8;
+            }
+            break;
+    }
+
+    // 修正数据类型
+    if (data instanceof FormData) {
         contentType = "multipart/form-data" + charsetutf8;
-    } else if (contentType.indexOf('xml') > -1) {
-        contentType = "text/xml" + charsetutf8;
+    } else if (contentType.indexOf('form') > -1) {
+        // 转换 object to Formdata
+        let fdata = new FormData();
+        for (let name in data) {
+            fdata.append(name, data[name]);
+        }
+        data = fdata;
     }
 
     // 事件寄存对象
@@ -41,7 +69,7 @@ const ajax = (options) => {
     // 要返回回去的promise
     let reP = new Promise((res, rej) => {
         // 设置请求
-        oReq.open(defaults.type, defaults.url, TRUE, oReq.username, oReq.password);
+        oReq.open(defaults.type, url, TRUE, defaults.username, defaults.password);
 
         // 设置 header
         let {
@@ -52,7 +80,7 @@ const ajax = (options) => {
         }
 
         // 设置contentType
-        oReq.setRequestHeader("Content-Type", contentType);
+        contentType && oReq.setRequestHeader("Content-Type", contentType);
 
         // 设置返回数据类型
         oReq.responseType = defaults.dataType;
@@ -112,10 +140,6 @@ const ajax = (options) => {
 
     // 异步发送请求
     setTimeout(() => {
-        let {
-            data
-        } = defaults;
-
         if (data) {
             if (contentType.indexOf('urlencoded') > -1) {
                 data = objectToUrlencode(data);
@@ -128,9 +152,13 @@ const ajax = (options) => {
         }
     }, 0);
 
+    // 返回参数
+    reP.options = defaults;
+
     return reP;
 }
 
+// 转换成urlencode
 const objectToUrlencode = (obj, headerStr = "") => {
     let str = "";
     for (let k in obj) {
@@ -165,5 +193,19 @@ const ajaxSetup = (options) => {
     assign(ajaxDefaults, options);
 }
 
-$.ajax = ajax;
-$.ajaxSetup = ajaxSetup;
+assign($, {
+    ajax,
+    ajaxSetup
+});
+
+each(['get', 'post'], name => {
+    $[name] = (url, data, dataType) => {
+        let options = {
+            url,
+            type: name.toUpperCase(),
+            data
+        }
+        dataType && (options.dataType = dataType);
+        return ajax(options);
+    }
+});

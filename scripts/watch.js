@@ -9,7 +9,7 @@ let beforeCode = "";
 
 let mainFun = async () => {
     // 打开主体base文件
-    let basefile = await readFile('src/xque.js', 'utf8');
+    let basefile = await readFile('src/base.js', 'utf8');
 
     // 扩展节点操控
     let domControlText = await readFile('src/dom.js', 'utf8');
@@ -32,6 +32,10 @@ let mainFun = async () => {
     // ajax
     let ajaxCode = await readFile('src/ajax.js', 'utf8');
     basefile = basefile.replace('//<!--ajax-->', ajaxCode);
+
+    // animate
+    let animate = await readFile('src/animate.js', 'utf8');
+    basefile = basefile.replace('//<!--animate-->', animate);
 
     if (beforeCode == basefile) {
         return;

@@ -161,7 +161,7 @@
         if (ele === expr) {
             return !0;
         }
-        var fadeParent = DOCUMENT.createElement('div');
+        let fadeParent = DOCUMENT.createElement('div');
         if (ele === DOCUMENT) {
             return false;
         }
@@ -183,7 +183,7 @@
     }
 
     // 从属数组类型
-    var xQuePrototype = Object.create(Array.prototype);
+    let xQuePrototype = Object.create(Array.prototype);
 
     // 合并方法
     assign(xQuePrototype, {
@@ -275,6 +275,26 @@
                 callback(i, e);
             });
             return this;
+        },
+        index(ele) {
+            let owner, tar;
+            if (!ele) {
+                tar = this[0];
+                owner = makeArray(tar.parentNode.children);
+            } else if (ele.nodeType) {
+                tar = ele;
+                owner = this;
+            } else if (ele instanceof $) {
+                tar = ele[0];
+                owner = this;
+            } else if (getType(ele) === STR_string) {
+                tar = this[0];
+                owner = $(ele);
+            }
+            return owner.indexOf(tar);
+        },
+        extend(obj) {
+            assign(xQuePrototype, obj);
         }
     });
 
@@ -381,8 +401,21 @@
 
     //<!--ajax-->
 
+    //<!--animate-->
+
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;
+
+    $.extend = (...args) => {
+        if (args.length === 1) {
+            let obj = args[0];
+            if (getType(obj) == "object") {
+                assign($, obj);
+            }
+        } else {
+            assign(...args);
+        }
+    };
 
     // 暴露到外部
     glo.$ = $;
