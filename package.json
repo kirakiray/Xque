@@ -1,10 +1,10 @@
 {
-    "name": "xque.js",
+    "name": "Xque.js",
     "version": "1.0.0",
-    "description": "Zepto replacer",
+    "description": "In place of Zepto",
     "scripts": {
         "watch": "node scripts/watch.js",
-        "ajaxtest": "node --inspect scripts/ajaxtest.js"
+        "ajaxtest": "open http://localhost:8998/test/ajaxtest.html && node --inspect scripts/ajaxtest.js"
     },
     "author": "YAO",
     "license": "MIT"

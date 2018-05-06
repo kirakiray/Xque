@@ -1255,33 +1255,9 @@ const ajax = (options) => {
         data
     } = defaults;
 
-    switch (defaults.type) {
-        case "GET":
-            // get是没有的
-            contentType = "";
-            // 转换数据
-            let dataUrlencode = objectToUrlencode(data);
-            url += (url.indexOf("?") > -1 ? url += "&" : "?") + dataUrlencode;
-            break;
-        case "POST":
-            let charsetutf8 = '; charset=UTF-8';
-            // 修正contentType
-            // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
-            if (contentType.indexOf('json') > -1) {
-                contentType = "application/json" + charsetutf8;
-            } else if (contentType.indexOf('urlencoded') > -1) {
-                contentType = "application/x-www-form-urlencoded" + charsetutf8;
-            } else if (contentType.indexOf('form') > -1) {
-                contentType = "multipart/form-data" + charsetutf8;
-            } else if (contentType.indexOf('xml') > -1) {
-                contentType = "text/xml" + charsetutf8;
-            }
-            break;
-    }
-
-    // 修正数据类型
+    // 修正form数据类型
     if (data instanceof FormData) {
-        contentType = "multipart/form-data" + charsetutf8;
+        contentType = "form";
     } else if (contentType.indexOf('form') > -1) {
         // 转换 object to Formdata
         let fdata = new FormData();
@@ -1289,6 +1265,33 @@ const ajax = (options) => {
             fdata.append(name, data[name]);
         }
         data = fdata;
+    }
+
+    switch (defaults.type) {
+        case "GET":
+            // get是没有的
+            contentType = "";
+            // 转换数据
+            let dataUrlencode = objectToUrlencode(data);
+            url += (url.indexOf("?") > -1 ? url += "&" : "?") + dataUrlencode;
+            data = null;
+            break;
+        case "POST":
+            let charsetutf8 = '; charset=UTF-8';
+            // 修正contentType
+            // application/json; multipart/form-data; application/x-www-form-urlencoded; text/xml;
+            if (contentType.indexOf('json') > -1) {
+                contentType = "application/json" + charsetutf8;
+                data = JSON.stringify(data);
+            } else if (contentType.indexOf('urlencoded') > -1) {
+                contentType = "application/x-www-form-urlencoded" + charsetutf8;
+                data = objectToUrlencode(data);
+            } else if (contentType.indexOf('form') > -1) {
+                contentType = "multipart/form-data" + charsetutf8;
+            } else if (contentType.indexOf('xml') > -1) {
+                contentType = "text/xml" + charsetutf8;
+            }
+            break;
     }
 
     // 事件寄存对象
@@ -1370,16 +1373,7 @@ const ajax = (options) => {
 
     // 异步发送请求
     setTimeout(() => {
-        if (data) {
-            if (contentType.indexOf('urlencoded') > -1) {
-                data = objectToUrlencode(data);
-            } else if (contentType.indexOf('application/json') > -1) {
-                data = JSON.stringify(data);
-            }
-            oReq.send(data)
-        } else {
-            oReq.send();
-        }
+        data ? oReq.send(data) : oReq.send();
     }, 0);
 
     // 返回参数
@@ -1389,15 +1383,15 @@ const ajax = (options) => {
 }
 
 // 转换成urlencode
-const objectToUrlencode = (obj, headerStr = "") => {
+const objectToUrlencode = (obj, headerStr = "", isParam) => {
     let str = "";
     for (let k in obj) {
         let val = obj[k];
         if (typeof val === "object") {
             if (headerStr) {
-                str += objectToUrlencode(val, `${headerStr}[${k}]`);
+                str += objectToUrlencode(val, `${headerStr}[${k}]`, isParam);
             } else {
-                str += objectToUrlencode(val, k);
+                str += objectToUrlencode(val, k, isParam);
             }
         } else {
             if (headerStr) {
@@ -1406,8 +1400,10 @@ const objectToUrlencode = (obj, headerStr = "") => {
                 }
                 k = headerStr + `[${k}]`;
             }
-            k = encodeURIComponent(k);
-            val = encodeURIComponent(val);
+            if (!isParam) {
+                k = encodeURIComponent(k);
+                val = encodeURIComponent(val);
+            }
             str += `${k}=${val}&`;
         }
     }
@@ -1425,7 +1421,10 @@ const ajaxSetup = (options) => {
 
 assign($, {
     ajax,
-    ajaxSetup
+    ajaxSetup,
+    param(obj) {
+        return objectToUrlencode(obj, "", 1)
+    }
 });
 
 each(['get', 'post'], name => {
@@ -1458,17 +1457,21 @@ each(['get', 'post'], name => {
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;
 
-    $.extend = (...args) => {
-        if (args.length === 1) {
-            let obj = args[0];
-            if (getType(obj) == "object") {
-                assign($, obj);
+    assign($, {
+        extend(...args) {
+            if (args.length === 1) {
+                let obj = args[0];
+                if (getType(obj) == "object") {
+                    assign($, obj);
+                }
+            } else {
+                return assign(...args);
             }
-        } else {
-            assign(...args);
-        }
-    };
+        },
+        merge,
+        type: getType
+    });
 
     // 暴露到外部
-    glo.$ = $;
+    glo.Xque = glo.$ = $;
 })(window);

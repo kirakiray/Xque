@@ -406,17 +406,21 @@
     // 修正原型链
     $.prototype = $.fn = XQue.prototype = xQuePrototype;
 
-    $.extend = (...args) => {
-        if (args.length === 1) {
-            let obj = args[0];
-            if (getType(obj) == "object") {
-                assign($, obj);
+    assign($, {
+        extend(...args) {
+            if (args.length === 1) {
+                let obj = args[0];
+                if (getType(obj) == "object") {
+                    assign($, obj);
+                }
+            } else {
+                return assign(...args);
             }
-        } else {
-            assign(...args);
-        }
-    };
+        },
+        merge,
+        type: getType
+    });
 
     // 暴露到外部
-    glo.$ = $;
+    glo.Xque = glo.$ = $;
 })(window);
