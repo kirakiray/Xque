@@ -122,7 +122,7 @@
             each(targets, (e, i) => {
                 arg2.call(e, i, getCall(e, arg1));
             });
-        } else if (!arg2) {
+        } else if (isUndefined(arg2)) {
             // 不存在第二个参数，属于返回值
             return getCall(targets[0], arg1);
         } else {
@@ -251,7 +251,9 @@
         },
         css(...args) {
             return pairIn(this, args, (target, key, value) => {
-                value = fixNumber(value);
+                if (String(getStyle(target)[key]).indexOf('px') > -1) {
+                    value = fixNumber(value);
+                }
                 target.style[key] = value;
             }, (target, key) => getStyle(target)[key]);
         },
