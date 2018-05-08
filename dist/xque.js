@@ -919,6 +919,9 @@ let eventsMap = {
     touchmove: TOUCHEVENT
 };
 
+// 优先执行原生方法的方法名
+let realEvents = ['focus'];
+
 // 生成Event
 let createEvent = $.Event = (type, eventInit) => {
     let TarEvent = eventsMap[type] || Event;
@@ -935,6 +938,13 @@ const getEventTypeData = (ele, type) => {
 const trigger = (eles, type, data, isHandle) => {
     each(eles, ele => {
         if (isElement(ele)) {
+            // 优先型的主动触发事件判断
+            // 没有数据绑定
+            if (!data && realEvents.indexOf(type) > -1 && isFunction(ele[type])) {
+                ele[type]();
+                return;
+            }
+
             let event;
             if (type instanceof Event) {
                 event = type;
@@ -1062,7 +1072,7 @@ const on = (eles, events, selector, data, fn, isOne) => {
                     initEvent(e);
 
                     // 自定义函数数据
-                    e.data = data;
+                    !isUndefined(data) && (e.data = data);
 
                     // 原始数据
                     e.originalEvent = e;
