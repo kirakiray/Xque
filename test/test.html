@@ -28,7 +28,7 @@
             <div class="tar0_ele"></div>
         </div>
         <script>
-            QUnit.test("core", function (assert) {
+            QUnit.test("core each", function (assert) {
                 assert.ok($('.tar0_ele').length == 3, 'length ok');
 
                 //获取成数组类型
@@ -39,6 +39,14 @@
 
                 //转换对象测试
                 assert.ok(!!$(arr).addClass, 'is $');
+
+                $('.tar0_ele').each(function (e) {
+                    if (this instanceof Element) {
+                        assert.ok(1, '\"this\" ok');
+                    } else {
+                        throw "each error";
+                    }
+                });
             });
         </script>
     </div>

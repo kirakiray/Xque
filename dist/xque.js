@@ -274,7 +274,7 @@
         },
         each(callback) {
             each(this, (e, i) => {
-                callback(i, e);
+                callback.call(e, i, e);
             });
             return this;
         },
