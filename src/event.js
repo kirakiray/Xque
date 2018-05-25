@@ -54,7 +54,7 @@ let eventsMap = {
 };
 
 // 优先执行原生方法的方法名
-let realEvents = ['focus'];
+let realEvents = ['focus', 'blur'];
 
 // 生成Event
 let createEvent = $.Event = (type, eventInit) => {
@@ -91,6 +91,7 @@ const trigger = (eles, type, data, isHandle) => {
                     });
                 } else {
                     event = new Event(type, {
+                        bubbles: FALSE,
                         cancelable: TRUE
                     });
                 }

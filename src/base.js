@@ -268,9 +268,15 @@
             }, target => target.innerHTML, 1);
         },
         val(val) {
+            // let r = singleIn(this, val, (target, value) => {
+            //     target.value = value;
+            // }, (target) => {
+            //     return target.value
+            // }, 1);
+            // return r;
             return singleIn(this, val, (target, value) => {
                 target.value = value;
-            }, target => target.vaule, 1);
+            }, target => target.value, 1);
         },
         each(callback) {
             each(this, (e, i) => {
@@ -361,7 +367,9 @@
                 elems = selector;
                 break;
             default:
-                if (isArrayLike(selector)) {
+                if (selector instanceof Element) {
+                    elems = [selector];
+                } else if (isArrayLike(selector)) {
                     // 类数组
                     elems = makeArray(selector);
                 } else if (isFunction(selector)) {
