@@ -948,7 +948,7 @@ const trigger = (eles, type, data, isHandle) => {
         if (isElement(ele)) {
             // 优先型的主动触发事件判断
             // 没有数据绑定
-            if (!data && realEvents.indexOf(type) > -1 && isFunction(ele[type])) {
+            if (!isHandle && !data && realEvents.indexOf(type) > -1 && isFunction(ele[type])) {
                 ele[type]();
                 return;
             }
