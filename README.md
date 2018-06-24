@@ -20,7 +20,7 @@ Xque 是由 es6 重构的兼容 jQuery库，体积更小，只有 12kb （这是
 
 名字 | 版本 | 大小
 --- | --- | ---
-Xque.min.js | 1.0.0 | 11.96 kb
+[Xque.min.js](https://kirakiray.github.io/Xque/dist/xque.min.js) | 1.0.0 | 12.04 kb
 [zepto.min.js](http://zeptojs.com/zepto.min.js) | 1.2.0 | 25.76 kb
 [jQuery](https://code.jquery.com/jquery-3.3.1.min.js) | 3.3.1 | 84.88 kb
 
