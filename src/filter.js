@@ -79,7 +79,7 @@ assign(xQuePrototype, {
         return $(newArr);
     },
     eq(index) {
-        return this.slice(index, index + 1 || undefined);
+        return this.slice(index, parseInt(index) + 1 || undefined);
     },
     first() {
         return this.eq(0);
