@@ -31,7 +31,7 @@
     // 是否像数组（包括数组）
     const isArrayLike = obj => !isUndefined(obj) && getType(obj.length) === "number" && obj.length >= 0 && !isFunction(obj) && !isString(obj);
 
-    const isElement = obj => obj instanceof Element;
+    const isElement = obj => obj instanceof Element || obj == glo;
 
     const {
         defineProperty,
@@ -367,7 +367,7 @@
                 elems = selector;
                 break;
             default:
-                if (selector instanceof Element) {
+                if (selector instanceof Element || selector === glo) {
                     elems = [selector];
                 } else if (isArrayLike(selector)) {
                     // 类数组
